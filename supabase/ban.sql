@@ -161,7 +161,7 @@ begin
    where id = p_id;
 
   -- 3. Blokir login di Supabase Auth selamanya
-  update auth.users set banned_until = 'infinity' where id = p_id;
+  update auth.users set banned_until = '9999-12-31 00:00:00+00' where id = p_id;
 
   -- 4. Baris auth.users sengaja TIDAK dihapus: username tetap terpakai.
 end;
