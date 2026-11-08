@@ -37,8 +37,10 @@ export const planName = id => PLANS.find(p => p.id === id)?.nama || '–'
 export const GOPAY = '082119032019'
 
 // Sama dengan public.is_premium() di database
+export const PESAN_BAN = 'Akun Anda sudah di-ban dan tidak bisa digunakan lagi.'
+
 export function isPremium(profile) {
-  if (!profile) return false
+  if (!profile || profile.banned_at) return false
   return profile.role === 'admin' || profile.premium_plan === 'selamanya' ||
     (profile.premium_until != null && new Date(profile.premium_until) > new Date())
 }

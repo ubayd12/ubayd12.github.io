@@ -20,6 +20,7 @@ function sisaMasaAktif(u) {
 }
 
 function statusUser(u) {
+  if (u.banned_at) return 'Di-ban'
   if (u.role === 'admin') return 'Admin'
   return u.premium_aktif ? 'Premium' : 'Gratis'
 }
@@ -56,7 +57,7 @@ export default function Admin({ myId }) {
   }
 
   async function ban(user) {
-    if (!confirm(`Ban ${user.username}? Akun beserta SELURUH datanya (catatan, tabungan, profil, langganan) akan dihapus permanen.`)) return
+    if (!confirm(`Ban ${user.username}? Semua datanya dihapus dan akun ini tidak bisa masuk lagi selamanya.`)) return
     if (prompt(`Ketik username "${user.username}" untuk konfirmasi:`) !== user.username) return
     setBusy(user.id)
     const { error } = await supabase.rpc('admin_ban_user', { p_id: user.id })
@@ -77,6 +78,7 @@ export default function Admin({ myId }) {
     if (kata && !(u.username || '').toLowerCase().includes(kata)) return false
     if (saring === 'gratis') return statusUser(u) === 'Gratis'
     if (saring === 'premium') return statusUser(u) === 'Premium'
+    if (saring === 'diban') return statusUser(u) === 'Di-ban'
     return true
   })
 
@@ -141,6 +143,7 @@ export default function Admin({ myId }) {
                 <option value="semua">Semua</option>
                 <option value="gratis">Gratis</option>
                 <option value="premium">Premium</option>
+                <option value="diban">Di-ban</option>
               </select>
             </label>
           </div>
@@ -152,15 +155,16 @@ export default function Admin({ myId }) {
                 {daftarUser.map(u => {
                   const status = statusUser(u)
                   const isAdmin = status === 'Admin'
-                  const gratis = status === 'Gratis'
+                  const diban = status === 'Di-ban'
+                  const gratis = status === 'Gratis' || diban
                   return (
                     <tr key={u.id}>
                       <td>{u.username}{u.id === myId ? ' (kamu)' : ''}</td>
-                      <td><span className={`badge ${gratis ? '' : 'gold'}`}>{status}</span></td>
+                      <td><span className={`badge ${diban ? 'red' : gratis ? '' : 'gold'}`}>{status}</span></td>
                       <td>{!gratis && u.premium_plan ? planName(u.premium_plan) : '–'}</td>
                       <td>{gratis ? '–' : sisaMasaAktif(u)}</td>
                       <td>{waktu(u.created_at)}</td>
-                      <td>{isAdmin ? '' : <button className="small danger" disabled={busy === u.id} onClick={() => ban(u)}>Ban</button>}</td>
+                      <td>{isAdmin || diban ? '' : <button className="small danger" disabled={busy === u.id} onClick={() => ban(u)}>Ban</button>}</td>
                     </tr>
                   )
                 })}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase, usernameToEmail, validUsername } from './supabase.js'
+import { PESAN_BAN } from './lib.js'
 
 export default function Login() {
   const [mode, setMode] = useState('masuk')
@@ -21,14 +22,23 @@ export default function Login() {
     }
     setBusy(true)
     const email = usernameToEmail(username)
-    const { error } = mode === 'daftar'
+    const { data, error } = mode === 'daftar'
       ? await supabase.auth.signUp({ email, password, options: { data: { username: username.trim().toLowerCase() } } })
       : await supabase.auth.signInWithPassword({ email, password })
     setBusy(false)
     if (error) {
-      if (error.message.includes('already registered')) setError('Username sudah dipakai.')
-      else if (error.message.includes('Invalid login')) setError('Username atau password salah.')
+      const pesan = (error.message || '').toLowerCase()
+      const kode = error.code || ''
+      if (pesan.includes('banned') || kode === 'user_banned') setError(PESAN_BAN)
+      else if (pesan.includes('already registered') || pesan.includes('already exists') || kode === 'user_already_exists') setError('Username sudah dipakai.')
+      else if (pesan.includes('invalid login')) setError('Username atau password salah.')
       else setError(error.message)
+      return
+    }
+    // Bila konfirmasi email aktif, Supabase tidak memberi error untuk email yang sudah
+    // terdaftar (termasuk akun yang di-ban), tetapi mengembalikan user tanpa identities.
+    if (mode === 'daftar' && data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      setError('Username sudah dipakai.')
     }
   }
 

@@ -99,3 +99,6 @@ tfoot th { color: #1d2329; border-bottom: 0; }
   .summary b { font-size: .85rem; }
   .toggle.four button { font-size: .85rem; }
 }
+.banned-screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: #fde4e1; color: #8a1a10; text-align: center; }
+.banned-screen p { font-size: 1.25rem; font-weight: 600; margin: 0 0 16px; }
+.badge.red { background: #fde4e1; color: #b42318; }
