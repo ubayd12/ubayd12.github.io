@@ -8,6 +8,7 @@ export default function ProfilKeuangan({ premium, onSubscribe }) {
   const [gaji, setGaji] = useState('')
   const [budget, setBudget] = useState('')
   const [umur, setUmur] = useState('')
+  const [kota, setKota] = useState('')
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
@@ -21,6 +22,7 @@ export default function ProfilKeuangan({ premium, onSubscribe }) {
       setGaji(data.gaji != null ? formatInput(data.gaji) : '')
       setBudget(data.budget_bulanan != null ? formatInput(data.budget_bulanan) : '')
       setUmur(data.umur != null ? String(data.umur) : '')
+      setKota(data.kota || '')
     })
   }, [premium])
 
@@ -39,6 +41,7 @@ export default function ProfilKeuangan({ premium, onSubscribe }) {
       gaji: gaji ? parseInput(gaji) : null,
       budget_bulanan: budget ? parseInput(budget) : null,
       umur: u,
+      kota: kota.trim() || null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
     setBusy(false)
@@ -58,6 +61,10 @@ export default function ProfilKeuangan({ premium, onSubscribe }) {
       <label>Budget bulanan (Rp)
         <input inputMode="numeric" value={budget} onChange={e => setBudget(formatInput(e.target.value))} />
         <small className="muted">Kamu akan diperingatkan saat pengeluaran bulan ini mencapai 80% dan 100% dari budget.</small>
+      </label>
+      <label>Kota
+        <input value={kota} maxLength={60} onChange={e => setKota(e.target.value)} placeholder="mis. Surabaya" />
+        <small className="muted">Dipakai AI untuk memperkirakan harga makanan dan ongkos di kotamu.</small>
       </label>
       <label>Umur (opsional)
         <input inputMode="numeric" value={umur} onChange={e => setUmur(e.target.value.replace(/\D/g, '').slice(0, 3))} />

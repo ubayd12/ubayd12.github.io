@@ -102,3 +102,13 @@ tfoot th { color: #1d2329; border-bottom: 0; }
 .banned-screen { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: #fde4e1; color: #8a1a10; text-align: center; }
 .banned-screen p { font-size: 1.25rem; font-weight: 600; margin: 0 0 16px; }
 .badge.red { background: #fde4e1; color: #b42318; }
+
+/* AI */
+.ai .chat { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; padding: 4px 0; }
+.ai .bubble { padding: 10px 12px; border-radius: 12px; white-space: pre-wrap; line-height: 1.45; max-width: 92%; }
+.ai .bubble.user { align-self: flex-end; background: #1f7a4d; color: #fff; }
+.ai .bubble.ai { align-self: flex-start; background: #eef2f5; }
+.ai .contoh { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.ai form.row { display: flex; gap: 8px; }
+.ai form.row input { flex: 1; }
+.ai .small { font-size: .8rem; }

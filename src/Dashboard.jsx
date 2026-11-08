@@ -50,7 +50,7 @@ export default function Dashboard({ session, profile, profileError, reloadProfil
       {tab === 'rekap' && <Rekap premium={premium} onSubscribe={goSubscribe} />}
       {tab === 'tabungan' && <Tabungan premium={premium} onSubscribe={goSubscribe} />}
       {tab === 'profil' && <ProfilKeuangan premium={premium} onSubscribe={goSubscribe} />}
-      {tab === 'ai' && <AI premium={premium} onSubscribe={goSubscribe} />}
+      {tab === 'ai' && <AI premium={premium || profile?.role === 'admin'} onSubscribe={goSubscribe} />}
       {tab === 'langganan' && !admin && <Langganan profile={profile} premium={premium} reloadProfile={reloadProfile} />}
       {tab === 'admin' && admin && <Admin myId={session.user.id} />}
     </>
