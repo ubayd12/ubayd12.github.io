@@ -8,7 +8,8 @@ Kunci Supabase diisi saat build dari GitHub Secrets `VITE_SUPABASE_URL` dan `VIT
 - **Premium:** saringan bulan, rekap harian/mingguan/bulanan/tahunan, tabungan + target, profil keuangan,
   notifikasi hemat (80% & 100% budget bulanan), menu AI Eksklusif ("AI segera hadir").
 - **Langganan:** pengguna memilih paket, transfer manual ke GoPay, lalu admin mengonfirmasi.
-- **Admin:** semua fitur premium, daftar pengguna & permintaan langganan, konfirmasi/tolak, ban akun.
+- **Admin:** semua fitur premium, daftar pengguna & permintaan langganan, konfirmasi/tolak, ban akun
+  (data dihapus, akun diblokir selamanya, username tidak bisa didaftarkan ulang).
 
 ## Menyiapkan database
 1. Buka Supabase Dashboard → SQL Editor, jalankan isi `supabase/schema.sql`.
@@ -18,3 +19,4 @@ Kunci Supabase diisi saat build dari GitHub Secrets `VITE_SUPABASE_URL` dan `VIT
    update public.profiles set role = 'admin' where username = 'username_kamu';
    ```
 3. Untuk membatalkan: jalankan `supabase/rollback.sql` (menghapus data premium, tabungan, profil keuangan, dan riwayat langganan).
+4. Ban permanen: jalankan `supabase/ban.sql` setelah `schema.sql`. Untuk membatalkan: `supabase/ban_rollback.sql`.
