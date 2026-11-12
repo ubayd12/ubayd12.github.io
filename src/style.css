@@ -21,7 +21,6 @@ button.danger { background: #b42318; }
 
 .topbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #e7ebef; color: #1d2329; font-size: .75rem; font-weight: 600; vertical-align: middle; }
-.badge.gold { background: #fdf0c4; color: #7a5300; }
 
 .tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
 .tabs button { flex: 0 0 auto; background: #fff; color: #1d2329; box-shadow: 0 1px 3px rgba(0,0,0,.08); white-space: nowrap; font-size: .95rem; }
@@ -61,26 +60,10 @@ button.danger { background: #b42318; }
 .row button { flex: 0 0 auto; }
 .row.between { justify-content: space-between; flex-wrap: wrap; }
 
-.locked { align-items: center; text-align: center; padding: 28px 16px; }
-.locked .lock { font-size: 2.4rem; }
-.locked p { color: #5b6670; max-width: 420px; }
 .soon { font-size: 1.1rem; font-weight: 600; color: #5b6670; padding: 16px 0; text-align: center; }
 
 .progress { height: 12px; background: #e7ebef; border-radius: 999px; overflow: hidden; }
 .progress span { display: block; height: 100%; background: #1f7a4d; transition: width .3s; }
-
-.plans { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
-.plan { display: flex; flex-direction: column; gap: 2px; background: #f4f6f8; color: #1d2329; border: 2px solid transparent; text-align: left; padding: 12px; }
-.plan span { font-weight: 700; color: #1f7a4d; }
-.plan small { color: #5b6670; }
-.plan.on { border-color: #1f7a4d; background: #e8f4ee; }
-.pay { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #e7ebef; padding-top: 12px; }
-.paytext { font-size: 1.1rem; font-weight: 700; background: #e8f4ee; padding: 12px; border-radius: 10px; word-break: break-word; }
-
-.status { font-size: .8rem; font-weight: 600; white-space: nowrap; padding: 2px 8px; border-radius: 999px; }
-.status.menunggu { background: #fff4d6; color: #6b4a00; }
-.status.dikonfirmasi { background: #e8f4ee; color: #1f7a4d; }
-.status.ditolak { background: #fde4e1; color: #8a1a10; }
 
 .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }

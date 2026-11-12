@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
 import { formatInput, parseInput, pesanError } from './lib.js'
-import Locked from './Locked.jsx'
 
-export default function ProfilKeuangan({ premium, onSubscribe }) {
+export default function ProfilKeuangan() {
   const [pekerjaan, setPekerjaan] = useState('')
   const [gaji, setGaji] = useState('')
   const [budget, setBudget] = useState('')
@@ -14,7 +13,6 @@ export default function ProfilKeuangan({ premium, onSubscribe }) {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (!premium) return
     supabase.from('user_settings').select('*').maybeSingle().then(({ data, error }) => {
       if (error) { setError(pesanError(error)); return }
       if (!data) return
@@ -24,9 +22,7 @@ export default function ProfilKeuangan({ premium, onSubscribe }) {
       setUmur(data.umur != null ? String(data.umur) : '')
       setKota(data.kota || '')
     })
-  }, [premium])
-
-  if (!premium) return <Locked title="Profil keuangan" onSubscribe={onSubscribe}>Simpan pekerjaan, gaji, dan budget bulanan, lalu dapatkan peringatan hemat saat pengeluaran mendekati budget.</Locked>
+  }, [])
 
   async function save(e) {
     e.preventDefault()

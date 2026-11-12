@@ -1,4 +1,4 @@
-// Helper bersama: format Rupiah, tanggal lokal, paket langganan.
+// Helper bersama: format Rupiah, tanggal lokal.
 
 export const rupiah = n => {
   const v = Math.round(Number(n) || 0)
@@ -25,28 +25,10 @@ export function monthRange(offset) {
 export const tanggal = s => parseYmd(s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 export const waktu = s => s ? new Date(s).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–'
 
-export const PLANS = [
-  { id: 'harian', nama: 'Harian', harga: 5000, durasi: '1 hari' },
-  { id: 'mingguan', nama: 'Mingguan', harga: 7000, durasi: '7 hari' },
-  { id: 'bulanan', nama: 'Bulanan', harga: 18000, durasi: '1 bulan' },
-  { id: 'tahunan', nama: 'Tahunan', harga: 180000, durasi: '1 tahun' },
-  { id: 'selamanya', nama: 'Selamanya', harga: 2000000, durasi: 'tanpa batas waktu' },
-]
-export const planName = id => PLANS.find(p => p.id === id)?.nama || '–'
-
-export const GOPAY = '082119032019'
-
-// Sama dengan public.is_premium() di database
 export const PESAN_BAN = 'Akun Anda sudah di-ban dan tidak bisa digunakan lagi.'
-
-export function isPremium(profile) {
-  if (!profile || profile.banned_at) return false
-  return profile.role === 'admin' || profile.premium_plan === 'selamanya' ||
-    (profile.premium_until != null && new Date(profile.premium_until) > new Date())
-}
 
 export function pesanError(error) {
   if (!error) return ''
-  if (error.code === '42501' || /premium/i.test(error.message)) return 'Fitur ini khusus Premium.'
+  if (error.code === '42501') return 'Akses ditolak. Coba keluar lalu masuk lagi.'
   return error.message
 }

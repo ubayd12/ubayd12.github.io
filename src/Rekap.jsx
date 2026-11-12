@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
 import { rupiah, ymd, parseYmd, monthRange, pesanError } from './lib.js'
-import Locked from './Locked.jsx'
 
 const MODES = [
   { id: 'day', label: 'Harian', ket: 'Bulan ini' },
@@ -34,14 +33,13 @@ function label(mode, s) {
   return String(d.getFullYear())
 }
 
-export default function Rekap({ premium, onSubscribe }) {
+export default function Rekap() {
   const [mode, setMode] = useState('day')
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (!premium) return
     const [mulai, akhir] = range(mode)
     setLoading(true); setError('')
     supabase.rpc('rekap_transaksi', { p_mulai: mulai, p_akhir: akhir, p_satuan: mode }).then(({ data, error }) => {
@@ -49,9 +47,7 @@ export default function Rekap({ premium, onSubscribe }) {
       if (error) { setError(pesanError(error)); setRows([]) }
       else setRows(data)
     })
-  }, [mode, premium])
-
-  if (!premium) return <Locked title="Rekap harian, mingguan, bulanan, tahunan" onSubscribe={onSubscribe}>Lihat ringkasan pemasukan dan pengeluaran per hari, minggu, bulan, dan tahun dengan Premium.</Locked>
+  }, [mode])
 
   const tIn = rows.reduce((s, r) => s + Number(r.pemasukan), 0)
   const tOut = rows.reduce((s, r) => s + Number(r.pengeluaran), 0)

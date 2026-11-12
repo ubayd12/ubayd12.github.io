@@ -10,7 +10,7 @@ const FILTERS = [
   ...Array.from({ length: 22 }, (_, i) => -(i + 2)).map(o => ({ value: String(o), label: monthRange(o).label })),
 ]
 
-export default function Catatan({ premium, onSubscribe }) {
+export default function Catatan() {
   const [all, setAll] = useState([])
   const [filtered, setFiltered] = useState(null)
   const [filter, setFilter] = useState('')
@@ -29,7 +29,7 @@ export default function Catatan({ premium, onSubscribe }) {
   }
 
   async function loadFiltered(f = filter) {
-    if (f === '' || !premium) { setFiltered(null); return }
+    if (f === '') { setFiltered(null); return }
     const { start, end } = monthRange(Number(f))
     const { data, error } = await supabase.rpc('transaksi_periode', { p_mulai: start, p_akhir: end })
     if (error) { setError(pesanError(error)); setFiltered(null) }
@@ -37,12 +37,11 @@ export default function Catatan({ premium, onSubscribe }) {
   }
 
   useEffect(() => { loadAll() }, [])
-  useEffect(() => { loadFiltered() }, [filter, premium])
+  useEffect(() => { loadFiltered() }, [filter])
   useEffect(() => {
-    if (!premium) return
     supabase.from('user_settings').select('budget_bulanan').maybeSingle()
       .then(({ data }) => setBudget(Number(data?.budget_bulanan) || 0))
-  }, [premium])
+  }, [])
 
   async function add(e) {
     e.preventDefault()
@@ -75,25 +74,20 @@ export default function Catatan({ premium, onSubscribe }) {
 
   return (
     <>
-      {premium && budget > 0 && persen >= 100 && (
+      {budget > 0 && persen >= 100 && (
         <p className="alert danger">⚠️ Pengeluaran bulan ini sudah {persen}% dari budget ({rupiah(keluarBulanIni)} dari {rupiah(budget)}). Budget bulanan sudah habis — saatnya berhemat!</p>
       )}
-      {premium && budget > 0 && persen >= 80 && persen < 100 && (
+      {budget > 0 && persen >= 80 && persen < 100 && (
         <p className="alert warn">🔔 Pengeluaran bulan ini sudah {persen}% dari budget ({rupiah(keluarBulanIni)} dari {rupiah(budget)}). Sisa {rupiah(budget - keluarBulanIni)}.</p>
       )}
 
       <div className="filterbar">
         <label>Tampilkan
-          {premium ? (
-            <select value={filter} onChange={e => setFilter(e.target.value)}>
-              <option value="">Semua catatan</option>
-              {FILTERS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-            </select>
-          ) : (
-            <select disabled><option>Semua catatan</option></select>
-          )}
+          <select value={filter} onChange={e => setFilter(e.target.value)}>
+            <option value="">Semua catatan</option>
+            {FILTERS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
         </label>
-        {!premium && <button type="button" className="link" onClick={onSubscribe}>🔒 Saring per bulan (Premium)</button>}
       </div>
 
       <div className="summary">
