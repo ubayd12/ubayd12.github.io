@@ -25,7 +25,7 @@ export default function App() {
   const loadProfile = useCallback(async () => {
     if (!userId) { setProfile(null); return }
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle()
-    if (error) setProfileError('Profil akun belum bisa dimuat. Fitur premium dinonaktifkan sementara.')
+    if (error) setProfileError('Profil akun belum bisa dimuat. Coba muat ulang halaman.')
     else setProfileError('')
     setProfile(data || null)
   }, [userId])
@@ -58,7 +58,7 @@ export default function App() {
     <main className="wrap">
       <h1>Catatku</h1>
       {session
-        ? <Dashboard key={userId} session={session} profile={profile} profileError={profileError} reloadProfile={loadProfile} />
+        ? <Dashboard key={userId} session={session} profile={profile} profileError={profileError} />
         : <div className="narrow"><Login /></div>}
     </main>
   )

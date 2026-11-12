@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
 import { rupiah, today, tanggal, formatInput, parseInput, pesanError } from './lib.js'
-import Locked from './Locked.jsx'
 
-export default function Tabungan({ premium, onSubscribe }) {
+export default function Tabungan() {
   const [items, setItems] = useState([])
   const [target, setTarget] = useState(0)
   const [targetInput, setTargetInput] = useState('')
@@ -23,9 +22,7 @@ export default function Tabungan({ premium, onSubscribe }) {
     const tv = Number(t.data?.target_tabungan) || 0
     setTarget(tv); setTargetInput(tv ? formatInput(tv) : '')
   }
-  useEffect(() => { if (premium) load() }, [premium])
-
-  if (!premium) return <Locked title="Tabungan" onSubscribe={onSubscribe}>Catat setoran dan penarikan tabungan, lalu pantau progres menuju target tabunganmu dengan Premium.</Locked>
+  useEffect(() => { load() }, [])
 
   const total = items.reduce((s, i) => s + (i.type === 'setor' ? 1 : -1) * Number(i.amount), 0)
   const pct = target > 0 ? Math.min(100, Math.max(0, Math.round(total / target * 100))) : 0

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase.js'
 
-// Menu AI: AI Klasik (gratis) atau AI Eksklusif (premium/admin), ditentukan server.
-// Server: Supabase Edge Function "ai" (Gemini jatah gratis) + kuota kata di database.
+// Menu AI Eksklusif untuk semua pengguna. Kuota kata mingguan dibaca dari
+// fungsi database ai_quota() (100.000 kata per minggu, admin tanpa batas).
+// Server: Supabase Edge Function "ai" (Gemini jatah gratis).
 const CONTOH = [
   'Enaknya makan siang apa hari ini?',
   'Berapa kira-kira ongkos Gojek 5 km di kotaku?',
@@ -14,7 +15,7 @@ function waktuReset(iso) {
   return new Date(iso).toLocaleString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function AI({ premium, onSubscribe }) {
+export default function AI() {
   const [status, setStatus] = useState(null)
   const [chat, setChat] = useState([])
   const [question, setQuestion] = useState('')
@@ -30,14 +31,20 @@ export default function AI({ premium, onSubscribe }) {
       try {
         const j = await error.context.json()
         if (j?.error) pesan = j.error
-        if (j?.tier) setStatus(j)
       } catch { /* abaikan */ }
       throw new Error(pesan)
     }
     return data
   }
 
-  useEffect(() => { call({ action: 'status' }).then(setStatus).catch(e => setError(e.message)) }, [])
+  // Sisa kuota dari ai_quota(): { tier, quota, used, period_key, resets_at }
+  async function loadQuota() {
+    const { data, error } = await supabase.rpc('ai_quota')
+    if (error) { setError(error.message); return }
+    setStatus(Array.isArray(data) ? data[0] : data)
+  }
+
+  useEffect(() => { loadQuota() }, [])
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [chat])
 
   async function ask(e, teks) {
@@ -49,31 +56,29 @@ export default function AI({ premium, onSubscribe }) {
     try {
       const data = await call({ question: q })
       setChat(c => [...c, { role: 'ai', text: data.answer }])
-      setStatus(data)
     } catch (err) {
       setError(err.message)
       setChat(c => c.slice(0, -1))
       setQuestion(q)
     }
     setBusy(false)
+    loadQuota()
   }
 
-  const eksklusif = status?.tier === 'eksklusif'
   const sisa = status && status.quota != null ? Math.max(0, status.quota - status.used) : null
 
   return (
     <div className="card ai">
       <div className="row between">
-        <h2>{eksklusif ? '✨ AI Eksklusif' : '🤖 AI Klasik'} <span className={`badge ${eksklusif ? 'gold' : ''}`}>{eksklusif ? 'Premium' : 'Gratis'}</span></h2>
+        <h2>✨ AI Eksklusif</h2>
       </div>
       {status && (
         <p className="muted">
-          {sisa === null ? 'Kuota tanpa batas (admin).' : `Sisa kuota: ${sisa.toLocaleString('id-ID')} dari ${status.quota.toLocaleString('id-ID')} kata.`}
-          {status.resets_at && sisa !== null && ` ${eksklusif && premium && status.quota > 5000 ? 'Berlaku sampai' : 'Diisi ulang'} ${waktuReset(status.resets_at)}.`}
+          {sisa === null
+            ? 'Kuota tanpa batas (admin).'
+            : `Sisa kuota minggu ini: ${sisa.toLocaleString('id-ID')} dari ${status.quota.toLocaleString('id-ID')} kata.`}
+          {status.resets_at && sisa !== null && ` Diisi ulang ${waktuReset(status.resets_at)}.`}
         </p>
-      )}
-      {!eksklusif && (
-        <p className="muted">Mau AI yang lebih pintar dengan kuota lebih besar? <button type="button" className="link" onClick={onSubscribe}>Berlangganan Premium</button></p>
       )}
 
       <div className="chat">
