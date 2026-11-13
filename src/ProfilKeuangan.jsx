@@ -60,7 +60,7 @@ export default function ProfilKeuangan() {
       </label>
       <label>Kota
         <input value={kota} maxLength={60} onChange={e => setKota(e.target.value)} placeholder="mis. Surabaya" />
-        <small className="muted">Dipakai AI untuk memperkirakan harga makanan dan ongkos di kotamu.</small>
+        <small className="muted">Kota tempat tinggalmu (opsional).</small>
       </label>
       <label>Umur (opsional)
         <input inputMode="numeric" value={umur} onChange={e => setUmur(e.target.value.replace(/\D/g, '').slice(0, 3))} />

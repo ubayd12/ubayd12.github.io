@@ -54,31 +54,36 @@ export default function Rekap() {
 
   return (
     <div className="card">
+      <h2>Rekap</h2>
       <div className="toggle four">
         {MODES.map(m => <button key={m.id} type="button" className={mode === m.id ? 'on' : ''} onClick={() => setMode(m.id)}>{m.label}</button>)}
       </div>
       <small className="muted">{MODES.find(m => m.id === mode).ket}</small>
       {error && <p className="error">{error}</p>}
       {loading ? <p>Memuat…</p> : (
-        <div className="tablewrap">
-          <table>
-            <thead><tr><th>Periode</th><th className="num">Pemasukan</th><th className="num">Pengeluaran</th><th className="num">Selisih</th></tr></thead>
-            <tbody>
-              {rows.length === 0 && <tr><td colSpan="4" className="muted">Belum ada catatan pada periode ini.</td></tr>}
-              {rows.map(r => (
-                <tr key={r.periode}>
-                  <td>{label(mode, r.periode)}</td>
-                  <td className="num in">{rupiah(r.pemasukan)}</td>
-                  <td className="num out">{rupiah(r.pengeluaran)}</td>
-                  <td className="num">{rupiah(r.pemasukan - r.pengeluaran)}</td>
-                </tr>
-              ))}
-            </tbody>
-            {rows.length > 0 && (
-              <tfoot><tr><th>Total</th><th className="num in">{rupiah(tIn)}</th><th className="num out">{rupiah(tOut)}</th><th className="num">{rupiah(tIn - tOut)}</th></tr></tfoot>
-            )}
-          </table>
-        </div>
+        <ul className="rekap">
+          {rows.length === 0 && <li className="muted">Belum ada catatan pada periode ini.</li>}
+          {rows.map(r => (
+            <li key={r.periode}>
+              <b>{label(mode, r.periode)}</b>
+              <div className="rekap-angka">
+                <span><small>Masuk</small><span className="in">{rupiah(r.pemasukan)}</span></span>
+                <span><small>Keluar</small><span className="out">{rupiah(r.pengeluaran)}</span></span>
+                <span><small>Selisih</small><span>{rupiah(r.pemasukan - r.pengeluaran)}</span></span>
+              </div>
+            </li>
+          ))}
+          {rows.length > 0 && (
+            <li className="total">
+              <b>Total</b>
+              <div className="rekap-angka">
+                <span><small>Masuk</small><span className="in">{rupiah(tIn)}</span></span>
+                <span><small>Keluar</small><span className="out">{rupiah(tOut)}</span></span>
+                <span><small>Selisih</small><span>{rupiah(tIn - tOut)}</span></span>
+              </div>
+            </li>
+          )}
+        </ul>
       )}
     </div>
   )

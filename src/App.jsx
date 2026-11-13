@@ -54,12 +54,12 @@ export default function App() {
     )
   }
 
+  if (session) return <Dashboard key={userId} session={session} profile={profile} profileError={profileError} />
+
   return (
     <main className="wrap">
       <h1>Catatku</h1>
-      {session
-        ? <Dashboard key={userId} session={session} profile={profile} profileError={profileError} />
-        : <div className="narrow"><Login /></div>}
+      <div className="narrow"><Login /></div>
     </main>
   )
 }

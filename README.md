@@ -5,9 +5,13 @@ Kunci Supabase diisi saat build dari GitHub Secrets `VITE_SUPABASE_URL` dan `VIT
 
 ## Fitur
 Semua fitur terbuka untuk setiap pengguna yang tidak di-ban:
-catat pemasukan/pengeluaran, saringan bulan, rekap harian/mingguan/bulanan/tahunan, tabungan + target,
-profil keuangan, notifikasi hemat (80% & 100% budget bulanan), dan menu AI Eksklusif
-(100.000 kata per minggu, diisi ulang Senin 00.00 WIB; admin tanpa batas).
+- **Beranda:** saldo, pemasukan, dan pengeluaran bulan ini, 5 catatan terakhir, dan anggaran yang paling mendekati batas.
+- **Catatan:** tambah, edit, dan hapus catatan dengan kategori; saringan bulan, jenis, dan kategori; kotak cari.
+- **Statistik:** diagram lingkaran pengeluaran per kategori, diagram batang pemasukan vs pengeluaran 6 bulan, dan rekap harian/mingguan/bulanan/tahunan.
+- **Anggaran:** batas per kategori per bulan (hijau < 80%, kuning 80–100%, merah > 100%) dan "Salin dari bulan lalu".
+- **Tabungan** + target.
+- **Lainnya / Pengaturan:** kategori, transaksi rutin (dibuat otomatis saat aplikasi dibuka), ekspor CSV, profil keuangan, ganti password, keluar.
+- Notifikasi hemat (80% & 100% budget bulanan dari Profil Keuangan).
 
 **Admin:** daftar pengguna dan ban akun (data dihapus, akun diblokir selamanya,
 username tidak bisa didaftarkan ulang).
@@ -22,3 +26,6 @@ username tidak bisa didaftarkan ulang).
 3. Untuk membatalkan: jalankan `supabase/rollback.sql` (menghapus data premium, tabungan, profil keuangan, dan riwayat langganan).
 4. Ban permanen: jalankan `supabase/ban.sql` setelah `schema.sql`. Untuk membatalkan: `supabase/ban_rollback.sql`.
 5. Tanpa premium: jalankan `supabase/tanpa_premium.sql` setelah `ban.sql` (hanya mengganti fungsi `is_premium()` dan `ai_quota()`, tidak menghapus data). Untuk membatalkan: `supabase/tanpa_premium_rollback.sql`.
+6. Fitur keuangan: jalankan `supabase/fitur_keuangan.sql` setelah `tanpa_premium.sql`
+   (menghapus fitur AI di database, menambah kategori, anggaran per kategori, dan transaksi rutin;
+   data transaksi dan tabungan tidak dihapus). Untuk membatalkan: `supabase/fitur_keuangan_rollback.sql`.
