@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Copy, Target, Trash2 } from 'lucide-react'
 import { supabase } from './supabase.js'
 import {
   rupiah, formatInput, parseInput, pesanError, bulanIni, geserBulan, namaBulan, awalBulan, akhirBulan,
-  ambilTransaksi,
+  ambilTransaksi, persen,
 } from './lib.js'
-import { PilihBulan, Modal, Chip, Progres, PeringatanHemat } from './ui.jsx'
+import {
+  PilihBulan, Modal, IkonKat, Progres, StatusAnggaran, PeringatanHemat, InputUang, Skeleton, Kosong, toast,
+} from './ui.jsx'
 
-function FormAnggaran({ kat, bulan, ada, onSaved }) {
+function FormAnggaran({ kat, bulan, ada, terpakai, onSaved }) {
   const [batas, setBatas] = useState(ada ? formatInput(ada.batas) : '')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -22,7 +25,7 @@ function FormAnggaran({ kat, bulan, ada, onSaved }) {
       { onConflict: 'user_id,category_id,bulan' },
     )
     setBusy(false)
-    if (error) setError(pesanError(error)); else onSaved()
+    if (error) setError(pesanError(error)); else onSaved('simpan')
   }
 
   async function hapus() {
@@ -30,23 +33,29 @@ function FormAnggaran({ kat, bulan, ada, onSaved }) {
     setBusy(true)
     const { error } = await supabase.from('budgets').delete().eq('id', ada.id)
     setBusy(false)
-    if (error) setError(pesanError(error)); else onSaved()
+    if (error) setError(pesanError(error)); else onSaved('hapus')
   }
 
   return (
     <form className="stack" onSubmit={simpan}>
-      <p><Chip kat={kat} /> · {namaBulan(bulan)}</p>
-      <label>Batas (Rp)
-        <input inputMode="numeric" autoFocus value={batas} onChange={e => setBatas(formatInput(e.target.value))} placeholder="mis. 1.500.000" />
+      <div className="modal-info">
+        <IkonKat kat={kat} besar />
+        <div>
+          <b>{kat.nama}</b>
+          <small>{namaBulan(bulan)} · terpakai {rupiah(terpakai)}</small>
+        </div>
+      </div>
+      <label><span className="label-teks">Batas bulan ini</span>
+        <InputUang besar autoFocus value={batas} onChange={setBatas} placeholder="0" />
       </label>
       {error && <p className="error">{error}</p>}
-      <button disabled={busy}>Simpan</button>
-      {ada && <button type="button" className="secondary danger-text" disabled={busy} onClick={hapus}>Hapus anggaran</button>}
+      <button disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan anggaran'}</button>
+      {ada && <button type="button" className="bahaya-outline" disabled={busy} onClick={hapus}><Trash2 size={18} /> Hapus anggaran</button>}
     </form>
   )
 }
 
-export default function Anggaran({ kategori }) {
+export default function Anggaran({ kategori, versi }) {
   const [bulan, setBulan] = useState(bulanIni())
   const [budgets, setBudgets] = useState([])
   const [items, setItems] = useState([])
@@ -54,6 +63,7 @@ export default function Anggaran({ kategori }) {
   const [info, setInfo] = useState('')
   const [atur, setAtur] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   const katKeluar = useMemo(() => kategori.filter(k => k.jenis === 'pengeluaran'), [kategori])
 
@@ -66,19 +76,21 @@ export default function Anggaran({ kategori }) {
       if (b.error) throw b.error
       setBudgets(b.data); setItems(list); setError('')
     } catch (e) { setError(pesanError(e)) }
+    setLoading(false)
   }
-  useEffect(() => { setInfo(''); load() }, [bulan])
+  useEffect(() => { setInfo(''); setLoading(true) }, [bulan])
+  useEffect(() => { load() }, [bulan, versi])
 
   const pakai = id => items.filter(t => t.type === 'pengeluaran' && t.category_id === id).reduce((s, t) => s + Number(t.amount), 0)
   const budgetMap = Object.fromEntries(budgets.map(b => [b.category_id, b]))
   const dengan = katKeluar.filter(k => budgetMap[k.id]).map(k => {
-    const p = pakai(k.id), batas = Number(budgetMap[k.id].batas)
-    return { kat: k, b: budgetMap[k.id], pakai: p, pct: Math.round(p / batas * 100) }
-  })
+    const p = pakai(k.id)
+    return { kat: k, b: budgetMap[k.id], pakai: p, pct: persen(p, budgetMap[k.id].batas) }
+  }).sort((a, b) => b.pct - a.pct)
   const tanpa = katKeluar.filter(k => !budgetMap[k.id])
   const totalBatas = dengan.reduce((s, x) => s + Number(x.b.batas), 0)
   const totalPakai = dengan.reduce((s, x) => s + x.pakai, 0)
-  const totalPct = totalBatas ? Math.round(totalPakai / totalBatas * 100) : 0
+  const totalPct = persen(totalPakai, totalBatas)
 
   async function salin() {
     setError(''); setInfo(''); setBusy(true)
@@ -95,58 +107,101 @@ export default function Anggaran({ kategori }) {
     )
     setBusy(false)
     if (e2) { setError(pesanError(e2)); return }
-    setInfo(`${baru.length} anggaran disalin dari ${namaBulan(lalu)}.`)
+    toast(`${baru.length} anggaran disalin dari ${namaBulan(lalu)}`)
     load()
   }
 
+  function selesai(aksi) {
+    setAtur(null)
+    load()
+    toast(aksi === 'hapus' ? 'Anggaran dihapus' : 'Anggaran disimpan')
+  }
+
+  const sisaTotal = totalBatas - totalPakai
+
   return (
     <>
-      <PeringatanHemat />
-      <div className="card">
+      <PeringatanHemat versi={versi} />
+
+      <section className="card">
         <PilihBulan value={bulan} onChange={setBulan} />
-        {dengan.length > 0 && (
-          <>
-            <div className="row between nowrap"><small>Total terpakai</small><small className="muted">{totalPct}%</small></div>
+        {!loading && dengan.length > 0 && (
+          <div className="anggaran-total">
+            <div className="anggaran-atas">
+              <span>
+                <small className="muted">Total terpakai</small>
+                <b className="angka-besar">{rupiah(totalPakai)}</b>
+              </span>
+              <StatusAnggaran pct={totalPct} />
+            </div>
             <Progres pct={totalPct} />
-            <small className="muted">{rupiah(totalPakai)} dari {rupiah(totalBatas)}</small>
-          </>
+            <small className="muted">
+              dari total batas {rupiah(totalBatas)} · {sisaTotal >= 0 ? `sisa ${rupiah(sisaTotal)}` : `lebih ${rupiah(-sisaTotal)}`}
+            </small>
+          </div>
         )}
-        <button className="secondary" disabled={busy} onClick={salin}>Salin dari bulan lalu</button>
+        <button type="button" className="secondary" disabled={busy} onClick={salin}><Copy size={16} /> Salin dari bulan lalu</button>
         {info && <p className="ok">{info}</p>}
-      </div>
+      </section>
+
       {error && <p className="alert danger">{error}</p>}
 
-      <div className="card">
-        <h2>Anggaran per kategori</h2>
-        {dengan.length === 0 && <p className="muted">Belum ada anggaran untuk {namaBulan(bulan)}. Pilih kategori di bawah untuk mengatur batas.</p>}
-        {dengan.map(x => (
-          <button key={x.kat.id} type="button" className="anggaran-item tombol" onClick={() => setAtur(x.kat)}>
-            <span className="row between nowrap"><Chip kat={x.kat} /><small className="muted">{x.pct}%</small></span>
-            <Progres pct={x.pct} />
-            <small className="muted">
-              {rupiah(x.pakai)} dari {rupiah(x.b.batas)} · {x.pakai > Number(x.b.batas) ? `lebih ${rupiah(x.pakai - x.b.batas)}` : `sisa ${rupiah(x.b.batas - x.pakai)}`}
-            </small>
-          </button>
-        ))}
-      </div>
+      <section className="card">
+        <div className="kepala-kartu">
+          <div>
+            <h2>Anggaran per kategori</h2>
+            <small className="muted">Ketuk untuk mengubah batas</small>
+          </div>
+        </div>
+        {loading ? <Skeleton baris={3} /> : dengan.length === 0 ? (
+          <Kosong ikon={<Target size={28} />} judul="Belum ada anggaran"
+            teks={`Atur batas belanja ${namaBulan(bulan)} dari daftar kategori di bawah, atau salin dari bulan lalu.`} />
+        ) : (
+          <ul className="daftar-anggaran">
+            {dengan.map(x => {
+              const sisa = Number(x.b.batas) - x.pakai
+              return (
+                <li key={x.kat.id}>
+                  <button type="button" className="anggaran-baris" onClick={() => setAtur(x.kat)}>
+                    <IkonKat kat={x.kat} />
+                    <span className="anggaran-isi">
+                      <span className="anggaran-atas"><b>{x.kat.nama}</b><StatusAnggaran pct={x.pct} /></span>
+                      <Progres pct={x.pct} />
+                      <small>{rupiah(x.pakai)} dari {rupiah(x.b.batas)} · {sisa >= 0 ? `sisa ${rupiah(sisa)}` : `lebih ${rupiah(-sisa)}`}</small>
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
 
-      {tanpa.length > 0 && (
-        <div className="card">
-          <h2>Belum ada anggaran</h2>
-          <ul className="list plain">
+      {!loading && tanpa.length > 0 && (
+        <section className="card">
+          <div className="kepala-kartu">
+            <div>
+              <h2>Belum ada anggaran</h2>
+              <small className="muted">Kategori pengeluaran tanpa batas di {namaBulan(bulan)}</small>
+            </div>
+          </div>
+          <ul className="daftar">
             {tanpa.map(k => (
               <li key={k.id}>
-                <div className="isi"><Chip kat={k} /><small>Terpakai {rupiah(pakai(k.id))}</small></div>
-                <button className="small secondary" onClick={() => setAtur(k)}>Atur</button>
+                <div className="baris">
+                  <IkonKat kat={k} />
+                  <span className="baris-teks"><b>{k.nama}</b><small>Terpakai {rupiah(pakai(k.id))}</small></span>
+                  <button type="button" className="kecil secondary" onClick={() => setAtur(k)}>Atur</button>
+                </div>
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {atur && (
         <Modal judul="Atur anggaran" onClose={() => setAtur(null)}>
-          <FormAnggaran kat={atur} bulan={bulan} ada={budgetMap[atur.id]} onSaved={() => { setAtur(null); load() }} />
+          <FormAnggaran kat={atur} bulan={bulan} ada={budgetMap[atur.id]} terpakai={pakai(atur.id)} onSaved={selesai} />
         </Modal>
       )}
     </>

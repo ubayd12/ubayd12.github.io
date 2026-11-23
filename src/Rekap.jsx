@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
+import { Skeleton } from './ui.jsx'
 import { rupiah, ymd, parseYmd, monthRange, pesanError } from './lib.js'
 
 const MODES = [
@@ -33,7 +34,7 @@ function label(mode, s) {
   return String(d.getFullYear())
 }
 
-export default function Rekap() {
+export default function Rekap({ versi }) {
   const [mode, setMode] = useState('day')
   const [rows, setRows] = useState([])
   const [error, setError] = useState('')
@@ -47,22 +48,26 @@ export default function Rekap() {
       if (error) { setError(pesanError(error)); setRows([]) }
       else setRows(data)
     })
-  }, [mode])
+  }, [mode, versi])
 
   const tIn = rows.reduce((s, r) => s + Number(r.pemasukan), 0)
   const tOut = rows.reduce((s, r) => s + Number(r.pengeluaran), 0)
 
   return (
-    <div className="card">
-      <h2>Rekap</h2>
-      <div className="toggle four">
-        {MODES.map(m => <button key={m.id} type="button" className={mode === m.id ? 'on' : ''} onClick={() => setMode(m.id)}>{m.label}</button>)}
+    <section className="card">
+      <div className="kepala-kartu">
+        <div>
+          <h2>Rekap</h2>
+          <small className="muted">{MODES.find(m => m.id === mode).ket}</small>
+        </div>
       </div>
-      <small className="muted">{MODES.find(m => m.id === mode).ket}</small>
+      <div className="segmen">
+        {MODES.map(m => <button key={m.id} type="button" aria-pressed={mode === m.id} className={mode === m.id ? 'on' : ''} onClick={() => setMode(m.id)}>{m.label}</button>)}
+      </div>
       {error && <p className="error">{error}</p>}
-      {loading ? <p>Memuat…</p> : (
+      {loading ? <Skeleton baris={3} /> : (
         <ul className="rekap">
-          {rows.length === 0 && <li className="muted">Belum ada catatan pada periode ini.</li>}
+          {rows.length === 0 && <li className="muted kosong-teks">Belum ada catatan pada periode ini.</li>}
           {rows.map(r => (
             <li key={r.periode}>
               <b>{label(mode, r.periode)}</b>
@@ -85,6 +90,6 @@ export default function Rekap() {
           )}
         </ul>
       )}
-    </div>
+    </section>
   )
 }

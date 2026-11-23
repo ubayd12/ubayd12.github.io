@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
+import { NotebookPen, Plus, Search, Trash2 } from 'lucide-react'
 import { supabase } from './supabase.js'
 import {
-  rupiah, today, tanggal, formatInput, parseInput, pesanError, bulanIni, geserBulan, namaBulan,
+  rupiah, today, kemarin, tanggal, labelHari, formatInput, parseInput, pesanError, bulanIni, geserBulan, namaBulan,
   awalBulan, akhirBulan, ambilTransaksi, jumlahJenis, TANPA_KATEGORI,
 } from './lib.js'
-import { Modal, Chip, Toggle, JENIS, PilihKategori, PeringatanHemat } from './ui.jsx'
+import {
+  Modal, Toggle, JENIS, PilihKategori, PeringatanHemat, InputUang, IkonKat, Ringkas, Skeleton, Kosong, toast,
+} from './ui.jsx'
 
-// Formulir catatan (tambah & edit)
-function FormTransaksi({ kategori, awal, onSaved, tombol = 'Simpan' }) {
-  const [type, setType] = useState(awal?.type || 'pengeluaran')
+// Formulir catatan (tambah & edit). onSaved('tambah' | 'ubah' | 'hapus')
+export function FormTransaksi({ kategori, awal, jenisAwal = 'pengeluaran', onSaved }) {
+  const [type, setType] = useState(awal?.type || jenisAwal)
   const [amount, setAmount] = useState(awal ? formatInput(awal.amount) : '')
   const [categoryId, setCategoryId] = useState(awal?.category_id || null)
   const [date, setDate] = useState(awal?.date || today())
@@ -35,81 +38,95 @@ function FormTransaksi({ kategori, awal, onSaved, tombol = 'Simpan' }) {
       : await supabase.from('transactions').insert(row)
     setBusy(false)
     if (error) { setError(pesanError(error)); return }
-    if (!awal) { setAmount(''); setNote('') }
-    onSaved()
+    onSaved(awal ? 'ubah' : 'tambah')
   }
 
+  async function hapus() {
+    if (!confirm(`Hapus catatan ${rupiah(awal.amount)} tanggal ${tanggal(awal.date)}?`)) return
+    setError(''); setBusy(true)
+    const { error } = await supabase.from('transactions').delete().eq('id', awal.id)
+    setBusy(false)
+    if (error) { setError(pesanError(error)); return }
+    onSaved('hapus')
+  }
+
+  const hariIni = today()
+  const kmrn = kemarin()
   return (
     <form className="stack" onSubmit={submit}>
       <Toggle value={type} onChange={gantiJenis} options={JENIS} />
-      <label>Jumlah (Rp)
-        <input inputMode="numeric" value={amount} onChange={e => setAmount(formatInput(e.target.value))} placeholder="mis. 25.000" />
+      <label><span className="label-teks">Jumlah</span>
+        <InputUang besar value={amount} onChange={setAmount} placeholder="0" autoFocus={!awal} />
       </label>
       <PilihKategori kategori={kategori} jenis={type} value={categoryId} onChange={setCategoryId} />
-      <label>Tanggal
-        <input type="date" value={date} onChange={e => setDate(e.target.value)} />
-      </label>
-      <label>Catatan
+      <div className="field">
+        <div className="field-kepala">
+          <span className="label-teks">Tanggal</span>
+          <span className="mini-chips">
+            <button type="button" className={date === hariIni ? 'on' : ''} onClick={() => setDate(hariIni)}>Hari ini</button>
+            <button type="button" className={date === kmrn ? 'on' : ''} onClick={() => setDate(kmrn)}>Kemarin</button>
+          </span>
+        </div>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)} aria-label="Tanggal" />
+      </div>
+      <label><span className="label-teks">Catatan <span className="opsional">(opsional)</span></span>
         <input value={note} maxLength={200} onChange={e => setNote(e.target.value)} placeholder="mis. makan siang" />
       </label>
       {error && <p className="error">{error}</p>}
-      <button disabled={busy}>{busy ? 'Menyimpan…' : tombol}</button>
+      <button disabled={busy}>{busy ? 'Menyimpan…' : awal ? 'Simpan perubahan' : 'Simpan catatan'}</button>
+      {awal && <button type="button" className="bahaya-outline" disabled={busy} onClick={hapus}><Trash2 size={18} /> Hapus catatan</button>}
     </form>
   )
 }
 
-// Satu baris catatan dalam daftar
-export function BarisCatatan({ item, kat, onEdit, onHapus }) {
+// Satu baris catatan. onClick → buka edit.
+export function BarisCatatan({ item, kat, onClick, denganTanggal = true }) {
+  const k = kat || TANPA_KATEGORI
+  const masuk = item.type === 'pemasukan'
+  const ket = [item.note, denganTanggal && tanggal(item.date)].filter(Boolean).join(' · ')
+  const isi = (
+    <>
+      <IkonKat kat={k} />
+      <span className="baris-teks">
+        <b>{k.nama}</b>
+        {ket && <small>{ket}</small>}
+      </span>
+      <span className={`baris-jumlah ${masuk ? 'in' : 'out'}`}>{masuk ? '+' : '−'}{rupiah(item.amount)}</span>
+    </>
+  )
   return (
     <li>
-      <div className="isi">
-        <b className={item.type === 'pemasukan' ? 'in' : 'out'}>
-          {item.type === 'pemasukan' ? '+' : '−'}{rupiah(item.amount)}
-        </b>
-        <span className="meta"><Chip kat={kat} /> <small>{tanggal(item.date)}</small></span>
-        {item.note && <small>{item.note}</small>}
-      </div>
-      {(onEdit || onHapus) && (
-        <div className="aksi">
-          {onEdit && <button className="link small" onClick={() => onEdit(item)}>Edit</button>}
-          {onHapus && <button className="link small merah" onClick={() => onHapus(item)}>Hapus</button>}
-        </div>
-      )}
+      {onClick
+        ? <button type="button" className="baris" title="Ketuk untuk edit" onClick={() => onClick(item)}>{isi}</button>
+        : <div className="baris">{isi}</div>}
     </li>
   )
 }
 
 const PILIHAN_BULAN = Array.from({ length: 26 }, (_, i) => geserBulan(bulanIni(), 1 - i))
+const SARING_JENIS = [{ v: '', l: 'Semua' }, { v: 'pemasukan', l: 'Pemasukan' }, { v: 'pengeluaran', l: 'Pengeluaran' }]
 
-export default function Catatan({ kategori }) {
+export default function Catatan({ kategori, versi, onTambah }) {
   const [items, setItems] = useState([])
   const [bulan, setBulan] = useState(bulanIni())
   const [jenis, setJenis] = useState('')
   const [kat, setKat] = useState('')
   const [cari, setCari] = useState('')
   const [edit, setEdit] = useState(null)
-  const [tambah, setTambah] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   const katMap = useMemo(() => Object.fromEntries(kategori.map(k => [k.id, k])), [kategori])
 
   async function load() {
-    setLoading(true)
     try {
       setItems(await ambilTransaksi(bulan && awalBulan(bulan), bulan && akhirBulan(bulan)))
       setError('')
     } catch (e) { setError(pesanError(e)) }
     setLoading(false)
   }
-  useEffect(() => { load() }, [bulan])
-
-  async function hapus(item) {
-    if (!confirm(`Hapus catatan ${rupiah(item.amount)} tanggal ${tanggal(item.date)}?`)) return
-    const { error } = await supabase.from('transactions').delete().eq('id', item.id)
-    if (error) { setError(pesanError(error)); return }
-    setItems(items.filter(i => i.id !== item.id))
-  }
+  useEffect(() => { setLoading(true) }, [bulan]) // kerangka hanya saat ganti bulan
+  useEffect(() => { load() }, [bulan, versi])
 
   const kata = cari.trim().toLowerCase()
   const tampil = items.filter(i => {
@@ -126,71 +143,90 @@ export default function Catatan({ kategori }) {
   const keluar = jumlahJenis(tampil, 'pengeluaran')
   const disaring = jenis || kat || kata
 
+  // Kelompokkan per tanggal
+  const grup = []
+  for (const i of tampil) {
+    const g = grup[grup.length - 1]
+    if (g && g.date === i.date) g.items.push(i)
+    else grup.push({ date: i.date, items: [i] })
+  }
+  for (const g of grup) g.net = jumlahJenis(g.items, 'pemasukan') - jumlahJenis(g.items, 'pengeluaran')
+
+  function selesai(aksi) {
+    setEdit(null)
+    load()
+    toast(aksi === 'hapus' ? 'Catatan dihapus' : 'Perubahan disimpan')
+  }
+
   return (
     <>
-      <PeringatanHemat />
+      <PeringatanHemat versi={versi} />
 
-      <div className="card">
-        <div className="row between">
-          <h2>Catatan</h2>
-          <button className="small" onClick={() => setTambah(true)}>+ Tambah</button>
+      <section className="card alat">
+        <div className="cari">
+          <Search size={18} aria-hidden="true" />
+          <input type="search" value={cari} onChange={e => setCari(e.target.value)} placeholder="Cari catatan atau kategori…" aria-label="Cari catatan" />
         </div>
-        <div className="saringan">
-          <label>Bulan
-            <select value={bulan} onChange={e => setBulan(e.target.value)}>
-              <option value="">Semua bulan</option>
-              {PILIHAN_BULAN.map(b => <option key={b} value={b}>{namaBulan(b)}</option>)}
-            </select>
-          </label>
-          <label>Jenis
-            <select value={jenis} onChange={e => { setJenis(e.target.value); setKat('') }}>
-              <option value="">Semua</option>
-              {JENIS.map(j => <option key={j.value} value={j.value}>{j.label}</option>)}
-            </select>
-          </label>
-          <label>Kategori
-            <select value={kat} onChange={e => setKat(e.target.value)}>
-              <option value="">Semua</option>
-              <option value="none">{TANPA_KATEGORI.ikon} Tanpa kategori</option>
-              {kategori.filter(k => !jenis || k.jenis === jenis).map(k => (
-                <option key={k.id} value={k.id}>{k.ikon} {k.nama}{jenis ? '' : ` (${k.jenis})`}</option>
-              ))}
-            </select>
-          </label>
-          <label>Cari
-            <input type="search" value={cari} onChange={e => setCari(e.target.value)} placeholder="Cari catatan…" />
-          </label>
+        <div className="alat-baris">
+          <select value={bulan} onChange={e => setBulan(e.target.value)} aria-label="Bulan">
+            <option value="">Semua bulan</option>
+            {PILIHAN_BULAN.map(b => <option key={b} value={b}>{namaBulan(b)}</option>)}
+          </select>
+          <select value={kat} onChange={e => setKat(e.target.value)} aria-label="Kategori">
+            <option value="">Semua kategori</option>
+            <option value="none">{TANPA_KATEGORI.ikon} Tanpa kategori</option>
+            {kategori.filter(k => !jenis || k.jenis === jenis).map(k => (
+              <option key={k.id} value={k.id}>{k.ikon} {k.nama}{jenis ? '' : ` (${k.jenis})`}</option>
+            ))}
+          </select>
         </div>
-      </div>
+        <div className="chips" role="group" aria-label="Jenis">
+          {SARING_JENIS.map(j => (
+            <button key={j.v} type="button" aria-pressed={jenis === j.v} className={jenis === j.v ? 'on' : ''}
+              onClick={() => { setJenis(j.v); setKat('') }}>{j.l}</button>
+          ))}
+        </div>
+      </section>
 
-      <div className="summary">
-        <div><small>Pemasukan</small><b className="in">{rupiah(masuk)}</b></div>
-        <div><small>Pengeluaran</small><b className="out">{rupiah(keluar)}</b></div>
-        <div className="lebar"><small>Selisih</small><b>{rupiah(masuk - keluar)}</b></div>
-      </div>
+      <Ringkas masuk={masuk} keluar={keluar} />
 
       {error && <p className="alert danger">{error}</p>}
 
-      <ul className="list">
-        {loading && <li className="empty">Memuat…</li>}
-        {!loading && tampil.length === 0 && <li className="empty">{disaring ? 'Tidak ada catatan yang cocok.' : 'Belum ada catatan.'}</li>}
-        {!loading && tampil.map(i => (
-          <BarisCatatan key={i.id} item={i} kat={katMap[i.category_id]} onEdit={setEdit} onHapus={hapus} />
-        ))}
-      </ul>
+      <section className="card">
+        <div className="kepala-kartu">
+          <div>
+            <h2>{bulan ? namaBulan(bulan) : 'Semua bulan'}</h2>
+            {!loading && <small className="muted">{tampil.length} catatan</small>}
+          </div>
+          <button type="button" className="kecil hanya-laptop" onClick={() => onTambah()}><Plus size={16} /> Tambah</button>
+        </div>
 
-      {tambah && (
-        <Modal judul="Tambah catatan" onClose={() => setTambah(false)}>
-          <FormTransaksi kategori={kategori} onSaved={() => { setTambah(false); load() }} />
-        </Modal>
-      )}
+        {loading ? <Skeleton baris={5} /> : tampil.length === 0 ? (
+          <Kosong ikon={<NotebookPen size={28} />}
+            judul={disaring ? 'Tidak ada yang cocok' : 'Belum ada catatan'}
+            teks={disaring ? 'Coba ubah kata kunci atau saringan.' : 'Catat pemasukan dan pengeluaranmu supaya keuangan lebih teratur.'}>
+            {!disaring && <button type="button" onClick={() => onTambah()}><Plus size={18} /> Tambah catatan</button>}
+          </Kosong>
+        ) : grup.map(g => (
+          <div className="grup" key={g.date}>
+            <div className="grup-kepala">
+              <span>{labelHari(g.date)}</span>
+              {g.items.length > 1 && <span className={g.net < 0 ? 'out' : 'in'}>{g.net > 0 ? '+' : ''}{rupiah(g.net)}</span>}
+            </div>
+            <ul className="daftar">
+              {g.items.map(i => (
+                <BarisCatatan key={i.id} item={i} kat={katMap[i.category_id]} onClick={setEdit} denganTanggal={false} />
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+
       {edit && (
         <Modal judul="Edit catatan" onClose={() => setEdit(null)}>
-          <FormTransaksi kategori={kategori} awal={edit} tombol="Simpan perubahan" onSaved={() => { setEdit(null); load() }} />
+          <FormTransaksi kategori={kategori} awal={edit} onSaved={selesai} />
         </Modal>
       )}
     </>
   )
 }
-
-export { FormTransaksi }

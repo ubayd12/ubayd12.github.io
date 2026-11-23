@@ -26,6 +26,18 @@ const pad = n => String(n).padStart(2, '0')
 export const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 export const today = () => ymd(new Date())
 export const parseYmd = s => { const [y, m, d] = s.slice(0, 10).split('-').map(Number); return new Date(y, m - 1, d) }
+export const kemarin = () => { const d = new Date(); d.setDate(d.getDate() - 1); return ymd(d) }
+
+// "Hari ini", "Kemarin", atau "Sabtu, 14 November" (tahun ditulis bila bukan tahun ini)
+export function labelHari(s) {
+  if (s === today()) return 'Hari ini'
+  if (s === kemarin()) return 'Kemarin'
+  const d = parseYmd(s)
+  const opsi = { weekday: 'long', day: 'numeric', month: 'long' }
+  if (d.getFullYear() !== new Date().getFullYear()) opsi.year = 'numeric'
+  return d.toLocaleDateString('id-ID', opsi)
+}
+export const tanggalPanjang = (d = new Date()) => d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
 // Rentang bulan relatif terhadap bulan ini (0 = bulan ini, -1 = bulan lalu, 1 = bulan depan)
 export function monthRange(offset) {
@@ -83,6 +95,15 @@ export function ambilTransaksi(mulai, akhir) {
 }
 
 export const jumlahJenis = (list, t) => list.filter(i => i.type === t).reduce((s, i) => s + Number(i.amount), 0)
+
+// Persen terpakai. Dibulatkan tanpa mengubah golongan warnanya:
+// di bawah 80% tetap hijau, 80–100% kuning, lewat 100% (walau sedikit) merah.
+export function persen(pakai, batas) {
+  const b = Number(batas)
+  if (!(b > 0)) return 0
+  const p = Number(pakai) / b * 100
+  return p > 100 ? Math.max(101, Math.round(p)) : Math.floor(p)
+}
 
 // Warna progres anggaran: hijau < 80%, kuning 80–100%, merah > 100%
 export const warnaProgres = pct => pct > 100 ? 'merah' : pct >= 80 ? 'kuning' : 'hijau'

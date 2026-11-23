@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
+import { UserRound } from 'lucide-react'
 import { formatInput, parseInput, pesanError } from './lib.js'
+import { InputUang, toast } from './ui.jsx'
 
 export default function ProfilKeuangan() {
   const [pekerjaan, setPekerjaan] = useState('')
@@ -42,27 +44,33 @@ export default function ProfilKeuangan() {
     }, { onConflict: 'user_id' })
     setBusy(false)
     if (error) setError(pesanError(error))
-    else setInfo('Profil keuangan disimpan.')
+    else { setInfo('Profil keuangan disimpan.'); toast('Profil keuangan disimpan') }
   }
 
   return (
     <form className="card" onSubmit={save}>
-      <h2>Profil keuangan</h2>
-      <label>Pekerjaan
+      <div className="kartu-ikon">
+        <span className="menu-ikon tint-teal"><UserRound size={22} /></span>
+        <div>
+          <h2>Data keuanganmu</h2>
+          <small className="muted">Dipakai untuk peringatan hemat. Semua kolom boleh dikosongkan.</small>
+        </div>
+      </div>
+      <label><span className="label-teks">Pekerjaan</span>
         <input value={pekerjaan} maxLength={100} onChange={e => setPekerjaan(e.target.value)} placeholder="mis. karyawan swasta" />
       </label>
-      <label>Gaji per bulan (Rp)
-        <input inputMode="numeric" value={gaji} onChange={e => setGaji(formatInput(e.target.value))} />
+      <label><span className="label-teks">Gaji per bulan</span>
+        <InputUang value={gaji} onChange={setGaji} placeholder="0" />
       </label>
-      <label>Budget bulanan (Rp)
-        <input inputMode="numeric" value={budget} onChange={e => setBudget(formatInput(e.target.value))} />
+      <label><span className="label-teks">Budget bulanan</span>
+        <InputUang value={budget} onChange={setBudget} placeholder="0" />
         <small className="muted">Kamu akan diperingatkan saat pengeluaran bulan ini mencapai 80% dan 100% dari budget.</small>
       </label>
-      <label>Kota
+      <label><span className="label-teks">Kota</span>
         <input value={kota} maxLength={60} onChange={e => setKota(e.target.value)} placeholder="mis. Surabaya" />
         <small className="muted">Kota tempat tinggalmu (opsional).</small>
       </label>
-      <label>Umur (opsional)
+      <label><span className="label-teks">Umur <span className="opsional">(opsional)</span></span>
         <input inputMode="numeric" value={umur} onChange={e => setUmur(e.target.value.replace(/\D/g, '').slice(0, 3))} />
       </label>
       {error && <p className="error">{error}</p>}

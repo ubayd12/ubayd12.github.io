@@ -1,21 +1,48 @@
 import { useMemo, useState } from 'react'
+import { ChevronRight, Download, Eye, EyeOff, FileSpreadsheet, KeyRound, LogOut } from 'lucide-react'
 import { supabase } from './supabase.js'
 import { pesanError, bulanIni, namaBulan, awalBulan, akhirBulan, ambilTransaksi, TANPA_KATEGORI } from './lib.js'
 import { PilihBulan } from './ui.jsx'
+import { HALAMAN, GRUP_LAINNYA } from './menu.js'
 
-// Menu "Lainnya" / Pengaturan
-export function Lainnya({ go, admin, menu }) {
+// Halaman "Lainnya": profil singkat + menu pengaturan
+export function Lainnya({ go, admin, username }) {
+  const grup = GRUP_LAINNYA.map(g => ({
+    ...g,
+    ids: g.judul === 'Akun' && admin ? [...g.ids, 'admin'] : g.ids,
+  }))
   return (
-    <div className="card">
-      <h2>Lainnya</h2>
-      <ul className="menu-lainnya">
-        {menu.map(m => (
-          <li key={m.id}><button type="button" onClick={() => go(m.id)}><span aria-hidden="true">{m.ikon}</span> {m.label}<span className="panah">›</span></button></li>
-        ))}
-        {admin && <li><button type="button" onClick={() => go('admin')}><span aria-hidden="true">🛡️</span> Admin<span className="panah">›</span></button></li>}
-        <li><button type="button" className="keluar" onClick={() => supabase.auth.signOut()}><span aria-hidden="true">🚪</span> Keluar</button></li>
-      </ul>
-    </div>
+    <>
+      <section className="card profil-kartu">
+        <span className="avatar besar" aria-hidden="true">{(username || '?').slice(0, 1).toUpperCase()}</span>
+        <div>
+          <b>{username}</b>
+          <small>{admin ? <span className="badge">Admin</span> : 'Pengguna Catatku'}</small>
+        </div>
+      </section>
+
+      {grup.map(g => (
+        <section className="card menu-grup" key={g.judul}>
+          <h3>{g.judul}</h3>
+          <ul>
+            {g.ids.map(id => {
+              const m = HALAMAN[id]
+              return (
+                <li key={id}>
+                  <button type="button" onClick={() => go(id)}>
+                    <span className={`menu-ikon tint-${m.warna}`}><m.Ikon size={20} /></span>
+                    <span className="menu-teks"><b>{m.label}</b><small>{m.ket}</small></span>
+                    <ChevronRight size={18} className="panah" />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      ))}
+
+      <button type="button" className="keluar-btn" onClick={() => supabase.auth.signOut()}><LogOut size={18} /> Keluar</button>
+    </>
   )
 }
 
@@ -75,24 +102,34 @@ export function Ekspor({ kategori }) {
   }
 
   return (
-    <div className="card">
-      <h2>Ekspor CSV</h2>
-      <small className="muted">File bisa dibuka di Excel. Kolom: Tanggal, Jenis, Kategori, Jumlah, Catatan.</small>
+    <section className="card">
+      <div className="kartu-ikon">
+        <span className="menu-ikon tint-oranye"><FileSpreadsheet size={22} /></span>
+        <div>
+          <h2>Unduh catatan</h2>
+          <small className="muted">File CSV bisa dibuka di Excel. Kolom: Tanggal, Jenis, Kategori, Jumlah, Catatan.</small>
+        </div>
+      </div>
       <PilihBulan value={bulan} onChange={setBulan} />
-      <button disabled={busy} onClick={() => ekspor(false)}>Unduh {namaBulan(bulan)}</button>
-      <button className="secondary" disabled={busy} onClick={() => ekspor(true)}>Unduh semua catatan</button>
+      <button type="button" disabled={busy} onClick={() => ekspor(false)}><Download size={18} /> Unduh {namaBulan(bulan)}</button>
+      <button type="button" className="secondary lebar" disabled={busy} onClick={() => ekspor(true)}><Download size={18} /> Unduh semua catatan</button>
       {error && <p className="error">{error}</p>}
       {info && <p className="ok">{info}</p>}
-    </div>
+    </section>
   )
 }
 
 // ---------------------------------------------------------------------
 // Ganti password
 // ---------------------------------------------------------------------
+function InputPassword({ value, onChange, lihat, ...rest }) {
+  return <input type={lihat ? 'text' : 'password'} value={value} onChange={e => onChange(e.target.value)} autoComplete="new-password" {...rest} />
+}
+
 export function GantiPassword() {
   const [pw1, setPw1] = useState('')
   const [pw2, setPw2] = useState('')
+  const [lihat, setLihat] = useState(false)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [busy, setBusy] = useState(false)
@@ -118,13 +155,22 @@ export function GantiPassword() {
 
   return (
     <form className="card" onSubmit={simpan}>
-      <h2>Ganti password</h2>
-      <label>Password baru
-        <input type="password" value={pw1} onChange={e => setPw1(e.target.value)} autoComplete="new-password" />
+      <div className="kartu-ikon">
+        <span className="menu-ikon tint-kuning"><KeyRound size={22} /></span>
+        <div>
+          <h2>Password baru</h2>
+          <small className="muted">Minimal 6 karakter. Isi dua kali supaya tidak salah ketik.</small>
+        </div>
+      </div>
+      <label><span className="label-teks">Password baru</span>
+        <InputPassword value={pw1} onChange={setPw1} lihat={lihat} />
       </label>
-      <label>Ulangi password baru
-        <input type="password" value={pw2} onChange={e => setPw2(e.target.value)} autoComplete="new-password" />
+      <label><span className="label-teks">Ulangi password baru</span>
+        <InputPassword value={pw2} onChange={setPw2} lihat={lihat} />
       </label>
+      <button type="button" className="link lihat-pw" onClick={() => setLihat(!lihat)}>
+        {lihat ? <><EyeOff size={16} /> Sembunyikan password</> : <><Eye size={16} /> Tampilkan password</>}
+      </button>
       {error && <p className="error">{error}</p>}
       {info && <p className="ok">{info}</p>}
       <button disabled={busy}>{busy ? 'Menyimpan…' : 'Ganti password'}</button>

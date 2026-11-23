@@ -3,6 +3,8 @@ import { supabase, supabaseReady } from './supabase.js'
 import Login from './Login.jsx'
 import Dashboard from './Dashboard.jsx'
 import { PESAN_BAN } from './lib.js'
+import { Logo } from './ui.jsx'
+import { ChartPie, PiggyBank, Repeat, ShieldAlert, Target } from 'lucide-react'
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -39,14 +41,19 @@ export default function App() {
   }, [profile])
 
   if (!supabaseReady) {
-    return <main className="wrap"><p className="error">Konfigurasi Supabase belum terbaca. Periksa secret VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY.</p></main>
+    return (
+      <main className="layar-tengah">
+        <div className="card kartu-tengah"><Logo size={48} /><p className="error">Konfigurasi Supabase belum terbaca. Periksa secret VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY.</p></div>
+      </main>
+    )
   }
-  if (loading) return <main className="wrap"><p>Memuat…</p></main>
+  if (loading) return <main className="layar-tengah"><div className="memuat"><Logo size={56} /><span>Memuat…</span></div></main>
 
   if (banned) {
     return (
       <div className="banned-screen" role="alert">
-        <div>
+        <div className="banned-kartu">
+          <span className="banned-ikon" aria-hidden="true"><ShieldAlert size={30} /></span>
           <p>{PESAN_BAN}</p>
           {!session && <button className="secondary" onClick={() => setBanned(false)}>Kembali ke halaman Masuk</button>}
         </div>
@@ -57,9 +64,21 @@ export default function App() {
   if (session) return <Dashboard key={userId} session={session} profile={profile} profileError={profileError} />
 
   return (
-    <main className="wrap">
-      <h1>Catatku</h1>
-      <div className="narrow"><Login /></div>
-    </main>
+    <div className="auth">
+      <section className="auth-hero">
+        <div className="auth-merek"><Logo size={44} /><span>Catatku</span></div>
+        <div className="auth-teks">
+          <h1>Atur uangmu dengan tenang.</h1>
+          <p>Catat pemasukan dan pengeluaran, pantau anggaran, dan kumpulkan tabungan — semua di satu tempat.</p>
+          <ul className="auth-fitur">
+            <li><ChartPie size={18} /> Statistik per kategori</li>
+            <li><Target size={18} /> Anggaran tiap bulan</li>
+            <li><Repeat size={18} /> Transaksi rutin otomatis</li>
+            <li><PiggyBank size={18} /> Target tabungan</li>
+          </ul>
+        </div>
+      </section>
+      <main className="auth-form"><Login /></main>
+    </div>
   )
 }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
+import { CalendarDays, Plus, Repeat, Trash2 } from 'lucide-react'
 import { supabase } from './supabase.js'
-import { rupiah, tanggal, ymd, formatInput, parseInput, pesanError } from './lib.js'
-import { Modal, Chip, Toggle, JENIS, PilihKategori } from './ui.jsx'
+import { rupiah, tanggal, ymd, formatInput, parseInput, pesanError, TANPA_KATEGORI } from './lib.js'
+import { Modal, IkonKat, Toggle, JENIS, PilihKategori, InputUang, Saklar, Skeleton, Kosong, toast } from './ui.jsx'
 
 const TANGGAL = Array.from({ length: 28 }, (_, i) => i + 1)
 
@@ -37,27 +38,36 @@ function FormRutin({ kategori, awal, onSaved }) {
       ? await supabase.from('recurring').update(row).eq('id', awal.id)
       : await supabase.from('recurring').insert(row)
     setBusy(false)
-    if (error) setError(pesanError(error)); else onSaved()
+    if (error) setError(pesanError(error)); else onSaved('simpan')
+  }
+
+  async function hapus() {
+    if (!confirm(`Hapus transaksi rutin ${rupiah(awal.jumlah)} tiap tanggal ${awal.tanggal}? Catatan yang sudah dibuat tidak ikut terhapus.`)) return
+    setBusy(true); setError('')
+    const { error } = await supabase.from('recurring').delete().eq('id', awal.id)
+    setBusy(false)
+    if (error) setError(pesanError(error)); else onSaved('hapus')
   }
 
   return (
     <form className="stack" onSubmit={simpan}>
       <Toggle value={jenis} onChange={gantiJenis} options={JENIS} />
-      <label>Jumlah (Rp)
-        <input inputMode="numeric" value={jumlah} onChange={e => setJumlah(formatInput(e.target.value))} placeholder="mis. 750.000" />
+      <label><span className="label-teks">Jumlah</span>
+        <InputUang besar value={jumlah} onChange={setJumlah} placeholder="0" />
       </label>
       <PilihKategori kategori={kategori} jenis={jenis} value={categoryId} onChange={setCategoryId} />
-      <label>Tiap tanggal
+      <label><span className="label-teks">Tiap tanggal</span>
         <select value={tgl} onChange={e => setTgl(e.target.value)}>
-          {TANGGAL.map(t => <option key={t} value={t}>Tanggal {t}</option>)}
+          {TANGGAL.map(t => <option key={t} value={t}>Tanggal {t} setiap bulan</option>)}
         </select>
       </label>
-      <label>Catatan
+      <label><span className="label-teks">Catatan <span className="opsional">(opsional)</span></span>
         <input value={catatan} maxLength={200} onChange={e => setCatatan(e.target.value)} placeholder="mis. bayar kos" />
       </label>
-      <small className="muted">Catatan dibuat otomatis saat aplikasi dibuka pada atau setelah tanggal jatuh tempo, mulai jatuh tempo berikutnya.</small>
+      <p className="petunjuk">Catatan dibuat otomatis saat aplikasi dibuka pada atau setelah tanggal jatuh tempo, mulai jatuh tempo berikutnya.</p>
       {error && <p className="error">{error}</p>}
       <button disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan'}</button>
+      {awal && <button type="button" className="bahaya-outline" disabled={busy} onClick={hapus}><Trash2 size={18} /> Hapus transaksi rutin</button>}
     </form>
   )
 }
@@ -66,57 +76,76 @@ export default function Rutin({ kategori }) {
   const [items, setItems] = useState([])
   const [edit, setEdit] = useState(null) // null | {} | { awal }
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   const katMap = useMemo(() => Object.fromEntries(kategori.map(k => [k.id, k])), [kategori])
 
   async function load() {
     const { data, error } = await supabase.from('recurring').select('*').order('tanggal').order('created_at')
     if (error) setError(pesanError(error)); else { setItems(data); setError('') }
+    setLoading(false)
   }
   useEffect(() => { load() }, [])
 
   async function aktifkan(r) {
+    setItems(list => list.map(i => i.id === r.id ? { ...i, aktif: !r.aktif } : i))
     const { error } = await supabase.from('recurring').update({ aktif: !r.aktif }).eq('id', r.id)
-    if (error) setError(pesanError(error)); else load()
+    if (error) setError(pesanError(error))
+    load()
   }
 
-  async function hapus(r) {
-    if (!confirm(`Hapus transaksi rutin ${rupiah(r.jumlah)} tiap tanggal ${r.tanggal}? Catatan yang sudah dibuat tidak ikut terhapus.`)) return
-    const { error } = await supabase.from('recurring').delete().eq('id', r.id)
-    if (error) setError(pesanError(error)); else load()
+  function selesai(aksi) {
+    setEdit(null)
+    load()
+    toast(aksi === 'hapus' ? 'Transaksi rutin dihapus' : 'Transaksi rutin disimpan')
   }
 
   return (
     <>
-      <div className="card">
-        <div className="row between nowrap">
-          <h2>Transaksi rutin</h2>
-          <button className="small" onClick={() => setEdit({})}>+ Tambah</button>
+      <section className="card">
+        <div className="kepala-kartu">
+          <div>
+            <h2>Daftar transaksi rutin</h2>
+            <small className="muted">Contoh: gaji tiap tanggal 25, kos tiap tanggal 1.</small>
+          </div>
+          {items.length > 0 && <button type="button" className="kecil" onClick={() => setEdit({})}><Plus size={16} /> Tambah</button>}
         </div>
-        <small className="muted">Contoh: gaji tiap tanggal 25, kos tiap tanggal 1.</small>
         {error && <p className="error">{error}</p>}
-        <ul className="list plain">
-          {items.length === 0 && <li className="empty">Belum ada transaksi rutin.</li>}
-          {items.map(r => (
-            <li key={r.id} className={r.aktif ? '' : 'redup'}>
-              <div className="isi">
-                <b className={r.jenis === 'pemasukan' ? 'in' : 'out'}>{r.jenis === 'pemasukan' ? '+' : '−'}{rupiah(r.jumlah)}</b>
-                <span className="meta"><Chip kat={katMap[r.category_id]} /> <small>tiap tanggal {r.tanggal}</small></span>
-                {r.catatan && <small>{r.catatan}</small>}
-                <small>{r.aktif ? `Aktif${berikutnya(r) ? ` · berikutnya ${tanggal(berikutnya(r))}` : ''}` : 'Nonaktif'}</small>
-              </div>
-              <div className="aksi">
-                <button className="link small" onClick={() => aktifkan(r)}>{r.aktif ? 'Nonaktifkan' : 'Aktifkan'}</button>
-                <button className="link small" onClick={() => setEdit({ awal: r })}>Edit</button>
-                <button className="link small merah" onClick={() => hapus(r)}>Hapus</button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+        {loading ? <Skeleton baris={2} /> : items.length === 0 ? (
+          <Kosong ikon={<Repeat size={28} />} judul="Belum ada transaksi rutin" teks="Catatan untuk gaji, kos, atau tagihan bulanan akan dibuat otomatis setiap bulan.">
+            <button type="button" onClick={() => setEdit({})}><Plus size={18} /> Tambah transaksi rutin</button>
+          </Kosong>
+        ) : (
+          <ul className="daftar-rutin">
+            {items.map(r => {
+              const k = katMap[r.category_id] || TANPA_KATEGORI
+              const next = r.aktif && berikutnya(r)
+              return (
+                <li key={r.id} className={`rutin${r.aktif ? '' : ' redup'}`}>
+                  <button type="button" className="baris" title="Ketuk untuk edit" onClick={() => setEdit({ awal: r })}>
+                    <IkonKat kat={k} />
+                    <span className="baris-teks">
+                      <b>{r.catatan || k.nama}</b>
+                      <small>{r.catatan && r.catatan !== k.nama ? `${k.nama} · ` : ''}tiap tanggal {r.tanggal}</small>
+                    </span>
+                    <span className={`baris-jumlah ${r.jenis === 'pemasukan' ? 'in' : 'out'}`}>{r.jenis === 'pemasukan' ? '+' : '−'}{rupiah(r.jumlah)}</span>
+                  </button>
+                  <div className="rutin-bawah">
+                    <small><CalendarDays size={14} /> {r.aktif ? (next ? `Berikutnya ${tanggal(next)}` : 'Menunggu jatuh tempo') : 'Sedang dijeda'}</small>
+                    <span className="saklar-label">
+                      <span>{r.aktif ? 'Aktif' : 'Nonaktif'}</span>
+                      <Saklar on={r.aktif} onChange={() => aktifkan(r)} label={`${r.aktif ? 'Nonaktifkan' : 'Aktifkan'} transaksi rutin ${r.catatan || k.nama}`} />
+                    </span>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
       {edit && (
         <Modal judul={edit.awal ? 'Edit transaksi rutin' : 'Tambah transaksi rutin'} onClose={() => setEdit(null)}>
-          <FormRutin kategori={kategori} awal={edit.awal} onSaved={() => { setEdit(null); load() }} />
+          <FormRutin kategori={kategori} awal={edit.awal} onSaved={selesai} />
         </Modal>
       )}
     </>
