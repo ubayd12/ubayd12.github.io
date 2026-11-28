@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ArrowDownLeft, ArrowUpRight, BellRing, ChevronLeft, ChevronRight, CircleCheck, TriangleAlert, Wallet, X } from 'lucide-react'
+import { ArrowDownLeft, ArrowUpRight, BellRing, ChevronLeft, ChevronRight, CircleCheck, Monitor, Moon, Sun, TriangleAlert, Wallet, X } from 'lucide-react'
+import { setPilihanTema, useTema } from './tema.js'
 import { supabase } from './supabase.js'
 import {
   rupiah, bulanIni, geserBulan, namaBulan, TANPA_KATEGORI, monthRange, ambilTransaksi, jumlahJenis,
@@ -22,6 +23,109 @@ export function Logo({ size = 36 }) {
       <path d="M41 22.5a13 13 0 1 0 0 19" fill="none" stroke="#fff" strokeWidth="7" strokeLinecap="round" />
       <circle cx="44.5" cy="32" r="4.5" fill="#a7f3d0" />
     </svg>
+  )
+}
+
+// Teks (biasanya angka Rupiah) yang mengecil sendiri bila tidak muat dalam kotaknya,
+// supaya angka besar seperti Rp 1.654.294.000 tidak terpotong atau patah ke baris baru.
+export function Pas({ children, className = '', as: Tag = 'span' }) {
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ukur = () => {
+      el.style.fontSize = ''
+      const lebar = el.clientWidth
+      if (!lebar || el.scrollWidth <= lebar) return
+      const dasar = parseFloat(getComputedStyle(el).fontSize)
+      el.style.fontSize = Math.max(dasar * 0.55, dasar * lebar / el.scrollWidth * 0.97) + 'px'
+    }
+    ukur()
+    const ro = typeof ResizeObserver !== 'undefined' && el.parentElement ? new ResizeObserver(ukur) : null
+    ro?.observe(el.parentElement)
+    document.fonts?.ready?.then(ukur)
+    return () => ro?.disconnect()
+  }, [children])
+  return <Tag ref={ref} className={`pas ${className}`}>{children}</Tag>
+}
+
+// Sekelompok angka (.pas-anak) yang mengecil bersama dengan skala yang sama,
+// supaya angka-angka yang berdampingan tetap seukuran.
+export function PasBersama({ as: Tag = 'div', className = '', children }) {
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ukur = () => {
+      const anak = [...el.querySelectorAll('.pas-anak')]
+      anak.forEach(a => { a.style.fontSize = '' })
+      let rasio = 1
+      for (const a of anak) {
+        if (a.clientWidth && a.scrollWidth > a.clientWidth) rasio = Math.min(rasio, a.clientWidth / a.scrollWidth * 0.97)
+      }
+      if (rasio < 1) {
+        const r = Math.max(0.55, rasio)
+        anak.forEach(a => { a.style.fontSize = parseFloat(getComputedStyle(a).fontSize) * r + 'px' })
+      }
+    }
+    ukur()
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(ukur) : null
+    ro?.observe(el)
+    document.fonts?.ready?.then(ukur)
+    return () => ro?.disconnect()
+  })
+  return <Tag ref={ref} className={className}>{children}</Tag>
+}
+
+// Angka yang naik perlahan dari 0 saat pertama tampil
+export function useAngkaNaik(target, lama = 700) {
+  const [nilai, setNilai] = useState(target)
+  const awal = useRef(true)
+  useEffect(() => {
+    const diam = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (!awal.current || diam || !target) { setNilai(target); return }
+    awal.current = false
+    let id
+    const mulai = performance.now()
+    const langkah = t => {
+      const k = Math.min(1, (t - mulai) / lama)
+      setNilai(Math.round(target * (1 - Math.pow(1 - k, 3))))
+      if (k < 1) id = requestAnimationFrame(langkah)
+    }
+    id = requestAnimationFrame(langkah)
+    return () => cancelAnimationFrame(id)
+  }, [target, lama])
+  return nilai
+}
+
+// Pilihan tema: Otomatis / Terang / Gelap
+const PILIHAN_TEMA = [
+  { value: 'otomatis', label: 'Otomatis', Ikon: Monitor },
+  { value: 'terang', label: 'Terang', Ikon: Sun },
+  { value: 'gelap', label: 'Gelap', Ikon: Moon },
+]
+export function PilihTema() {
+  const { pilihan } = useTema()
+  return (
+    <div className="segmen" role="group" aria-label="Tema tampilan">
+      {PILIHAN_TEMA.map(({ value, label, Ikon }) => (
+        <button key={value} type="button" aria-pressed={pilihan === value} className={pilihan === value ? 'on' : ''} onClick={() => setPilihanTema(value)}>
+          <Ikon size={16} /> {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// Tombol kecil terang ↔ gelap (menu samping laptop)
+export function TombolTema() {
+  const { aktif } = useTema()
+  const gelap = aktif === 'gelap'
+  return (
+    <button type="button" className="ikon-btn" title={gelap ? 'Tema terang' : 'Tema gelap'} aria-label={gelap ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
+      onClick={() => setPilihanTema(gelap ? 'terang' : 'gelap')}>
+      {gelap ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
   )
 }
 
@@ -225,11 +329,11 @@ export function PilihKategori({ kategori, jenis, value, onChange }) {
 export function Ringkas({ masuk, keluar }) {
   const selisih = masuk - keluar
   return (
-    <section className="card ringkas">
-      <div className="ringkas-item"><span className="ikon-bulat tint-hijau"><ArrowDownLeft size={18} /></span><small>Pemasukan</small><b className="in">{rupiah(masuk)}</b></div>
-      <div className="ringkas-item"><span className="ikon-bulat tint-merah"><ArrowUpRight size={18} /></span><small>Pengeluaran</small><b className="out">{rupiah(keluar)}</b></div>
-      <div className="ringkas-item"><span className="ikon-bulat tint-biru"><Wallet size={18} /></span><small>Selisih</small><b className={selisih < 0 ? 'out' : ''}>{rupiah(selisih)}</b></div>
-    </section>
+    <PasBersama as="section" className="card ringkas">
+      <div className="ringkas-item"><span className="ikon-bulat tint-hijau"><ArrowDownLeft size={18} /></span><small>Pemasukan</small><b className="pas pas-anak in">{rupiah(masuk)}</b></div>
+      <div className="ringkas-item"><span className="ikon-bulat tint-merah"><ArrowUpRight size={18} /></span><small>Pengeluaran</small><b className="pas pas-anak out">{rupiah(keluar)}</b></div>
+      <div className="ringkas-item"><span className="ikon-bulat tint-biru"><Wallet size={18} /></span><small>Selisih</small><b className={`pas pas-anak${selisih < 0 ? ' out' : ''}`}>{rupiah(selisih)}</b></div>
+    </PasBersama>
   )
 }
 

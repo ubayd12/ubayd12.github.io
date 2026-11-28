@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase.js'
-import { Skeleton } from './ui.jsx'
+import { Skeleton, PasBersama } from './ui.jsx'
 import { rupiah, ymd, parseYmd, monthRange, pesanError } from './lib.js'
 
 const MODES = [
@@ -66,15 +66,15 @@ export default function Rekap({ versi }) {
       </div>
       {error && <p className="error">{error}</p>}
       {loading ? <Skeleton baris={3} /> : (
-        <ul className="rekap">
+        <PasBersama as="ul" className="rekap">
           {rows.length === 0 && <li className="muted kosong-teks">Belum ada catatan pada periode ini.</li>}
           {rows.map(r => (
             <li key={r.periode}>
               <b>{label(mode, r.periode)}</b>
               <div className="rekap-angka">
-                <span><small>Masuk</small><span className="in">{rupiah(r.pemasukan)}</span></span>
-                <span><small>Keluar</small><span className="out">{rupiah(r.pengeluaran)}</span></span>
-                <span><small>Selisih</small><span>{rupiah(r.pemasukan - r.pengeluaran)}</span></span>
+                <span><small>Masuk</small><span className="pas pas-anak in">{rupiah(r.pemasukan)}</span></span>
+                <span><small>Keluar</small><span className="pas pas-anak out">{rupiah(r.pengeluaran)}</span></span>
+                <span><small>Selisih</small><span className="pas pas-anak">{rupiah(r.pemasukan - r.pengeluaran)}</span></span>
               </div>
             </li>
           ))}
@@ -82,13 +82,13 @@ export default function Rekap({ versi }) {
             <li className="total">
               <b>Total</b>
               <div className="rekap-angka">
-                <span><small>Masuk</small><span className="in">{rupiah(tIn)}</span></span>
-                <span><small>Keluar</small><span className="out">{rupiah(tOut)}</span></span>
-                <span><small>Selisih</small><span>{rupiah(tIn - tOut)}</span></span>
+                <span><small>Masuk</small><span className="pas pas-anak in">{rupiah(tIn)}</span></span>
+                <span><small>Keluar</small><span className="pas pas-anak out">{rupiah(tOut)}</span></span>
+                <span><small>Selisih</small><span className="pas pas-anak">{rupiah(tIn - tOut)}</span></span>
               </div>
             </li>
           )}
-        </ul>
+        </PasBersama>
       )}
     </section>
   )

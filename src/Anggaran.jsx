@@ -6,7 +6,7 @@ import {
   ambilTransaksi, persen,
 } from './lib.js'
 import {
-  PilihBulan, Modal, IkonKat, Progres, StatusAnggaran, PeringatanHemat, InputUang, Skeleton, Kosong, toast,
+  PilihBulan, Modal, IkonKat, Progres, StatusAnggaran, PeringatanHemat, InputUang, Skeleton, Kosong, Pas, toast,
 } from './ui.jsx'
 
 function FormAnggaran({ kat, bulan, ada, terpakai, onSaved }) {
@@ -130,7 +130,7 @@ export default function Anggaran({ kategori, versi }) {
             <div className="anggaran-atas">
               <span>
                 <small className="muted">Total terpakai</small>
-                <b className="angka-besar">{rupiah(totalPakai)}</b>
+                <Pas as="b" className="angka-besar">{rupiah(totalPakai)}</Pas>
               </span>
               <StatusAnggaran pct={totalPct} />
             </div>

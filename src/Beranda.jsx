@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowDownLeft, ArrowUpRight, ChevronRight, Minus, NotebookPen, Plus, Repeat, Target, Wallet } from 'lucide-react'
 import { supabase } from './supabase.js'
 import { rupiah, pesanError, bulanIni, namaBulan, awalBulan, akhirBulan, ambilTransaksi, jumlahJenis, persen } from './lib.js'
-import { Modal, IkonKat, Progres, StatusAnggaran, PeringatanHemat, Skeleton, Kosong, toast } from './ui.jsx'
+import { Modal, IkonKat, Progres, StatusAnggaran, PeringatanHemat, Skeleton, Kosong, Pas, PasBersama, useAngkaNaik, toast } from './ui.jsx'
 import { BarisCatatan, FormTransaksi } from './Catatan.jsx'
 
 export default function Beranda({ kategori, go, versi, onTambah }) {
@@ -35,6 +35,7 @@ export default function Beranda({ kategori, go, versi, onTambah }) {
   const masuk = jumlahJenis(bulanan, 'pemasukan')
   const keluar = jumlahJenis(bulanan, 'pengeluaran')
   const rasio = masuk > 0 ? Math.round(keluar / masuk * 100) : null
+  const saldoTampil = useAngkaNaik(loading ? 0 : masuk - keluar)
 
   // Anggaran yang paling mendekati (atau melewati) batas
   const ringkasAnggaran = budgets
@@ -58,23 +59,23 @@ export default function Beranda({ kategori, go, versi, onTambah }) {
       <div className="beranda-atas">
         <section className="hero">
           <span className="hero-label"><Wallet size={16} /> Saldo {namaBulan(bulan)}</span>
-          {loading ? <span className="sk sk-saldo" /> : <div className="hero-saldo">{rupiah(masuk - keluar)}</div>}
+          {loading ? <span className="sk sk-saldo" /> : <Pas as="div" className="hero-saldo">{rupiah(saldoTampil)}</Pas>}
           {!loading && rasio !== null && (
             <div className="hero-rasio">
               <div className="hero-bar"><span style={{ width: Math.min(100, rasio) + '%' }} /></div>
-              <small>{rasio}% pemasukan bulan ini sudah terpakai</small>
+              <small>{rasio < 1 && keluar > 0 ? 'Kurang dari 1%' : `${rasio}%`} pemasukan bulan ini sudah terpakai</small>
             </div>
           )}
-          <div className="hero-dua">
+          <PasBersama className="hero-dua">
             <div>
               <small><ArrowDownLeft size={14} /> Pemasukan</small>
-              {loading ? <span className="sk sk-kecil" /> : <b>{rupiah(masuk)}</b>}
+              {loading ? <span className="sk sk-kecil" /> : <b className="pas pas-anak">{rupiah(masuk)}</b>}
             </div>
             <div>
               <small><ArrowUpRight size={14} /> Pengeluaran</small>
-              {loading ? <span className="sk sk-kecil" /> : <b>{rupiah(keluar)}</b>}
+              {loading ? <span className="sk sk-kecil" /> : <b className="pas pas-anak">{rupiah(keluar)}</b>}
             </div>
-          </div>
+          </PasBersama>
         </section>
 
         <div className="aksi-cepat">

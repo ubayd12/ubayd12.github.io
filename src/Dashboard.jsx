@@ -11,7 +11,7 @@ import Kategori from './Kategori.jsx'
 import Rutin from './Rutin.jsx'
 import Admin from './Admin.jsx'
 import { Lainnya, Ekspor, GantiPassword } from './Pengaturan.jsx'
-import { Logo, Modal, Toaster, toast } from './ui.jsx'
+import { Logo, Modal, Toaster, TombolTema, toast } from './ui.jsx'
 import { HALAMAN, BAWAH, SAMPING_UTAMA, SAMPING_LAIN } from './menu.js'
 
 // Diagram (recharts) dimuat terpisah supaya pembukaan aplikasi lebih ringan
@@ -19,6 +19,15 @@ const Statistik = lazy(() => import('./Statistik.jsx'))
 
 // Halaman disimpan di alamat (#statistik) supaya tombol kembali di HP berfungsi
 const halamanDariHash = () => { const h = window.location.hash.slice(1); return HALAMAN[h] ? h : 'beranda' }
+
+// Salam sesuai waktu setempat
+function salam() {
+  const j = new Date().getHours()
+  if (j >= 4 && j < 10) return ['Selamat pagi', '🌤️']
+  if (j >= 10 && j < 15) return ['Selamat siang', '☀️']
+  if (j >= 15 && j < 18) return ['Selamat sore', '🌇']
+  return ['Selamat malam', '🌙']
+}
 
 // Tombol tambah melayang (HP) hanya di halaman ini
 const DENGAN_FAB = new Set(['catatan', 'statistik', 'anggaran'])
@@ -83,7 +92,7 @@ export default function Dashboard({ session, profile, profileError }) {
   return (
     <div className="app">
       <aside className="samping">
-        <div className="merek"><Logo size={36} /><span>Catatku</span></div>
+        <div className="merek"><Logo size={36} /><span>Catatku</span><TombolTema /></div>
         <button type="button" className="tambah-samping" onClick={() => bukaTambah()}><Plus size={18} /> Tambah catatan</button>
         <nav aria-label="Menu utama">
           <small className="nav-judul">Menu</small>
@@ -110,7 +119,7 @@ export default function Dashboard({ session, profile, profileError }) {
             )}
             <div className="kepala-teks">
               {p === 'beranda'
-                ? <><small>{tanggalPanjang()}</small><h1>Halo, {username} 👋</h1></>
+                ? <><small>{tanggalPanjang()}</small><h1>{salam()[0]}, {username} {salam()[1]}</h1></>
                 : <><h1>{info.label}</h1>{info.ket && <small>{info.ket}</small>}</>}
             </div>
             <button type="button" className="avatar hanya-hp" aria-label="Akun dan pengaturan" onClick={() => go('lainnya')}>{inisial}</button>

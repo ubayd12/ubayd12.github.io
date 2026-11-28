@@ -5,9 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Catatku — catatan keuangan pribadi: pemasukan, pengeluaran, anggaran, dan tabungan." />
     <meta name="theme-color" content="#047857" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Catatku" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <title>Catatku</title>
+    <script>
+      // Pasang tema sebelum halaman tampil supaya tidak berkedip putih
+      (function () {
+        try {
+          var p = localStorage.getItem('catatku-tema') || 'otomatis'
+          var gelap = p === 'gelap' || (p === 'otomatis' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.dataset.tema = gelap ? 'gelap' : 'terang'
+          if (gelap) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0a1310')
+        } catch (e) {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

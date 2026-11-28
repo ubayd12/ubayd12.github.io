@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { ChevronRight, Download, Eye, EyeOff, FileSpreadsheet, KeyRound, LogOut } from 'lucide-react'
+import { ChevronRight, Download, Eye, EyeOff, FileSpreadsheet, KeyRound, LogOut, Palette } from 'lucide-react'
 import { supabase } from './supabase.js'
 import { pesanError, bulanIni, namaBulan, awalBulan, akhirBulan, ambilTransaksi, TANPA_KATEGORI } from './lib.js'
-import { PilihBulan } from './ui.jsx'
+import { PilihBulan, PilihTema } from './ui.jsx'
 import { HALAMAN, GRUP_LAINNYA } from './menu.js'
 
 // Halaman "Lainnya": profil singkat + menu pengaturan
@@ -40,6 +40,17 @@ export function Lainnya({ go, admin, username }) {
           </ul>
         </section>
       ))}
+
+      <section className="card">
+        <div className="kartu-ikon">
+          <span className="menu-ikon tint-biru"><Palette size={20} /></span>
+          <div>
+            <h2>Tampilan</h2>
+            <small className="muted">Otomatis mengikuti tema terang/gelap di HP-mu</small>
+          </div>
+        </div>
+        <PilihTema />
+      </section>
 
       <button type="button" className="keluar-btn" onClick={() => supabase.auth.signOut()}><LogOut size={18} /> Keluar</button>
     </>

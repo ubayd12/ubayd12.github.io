@@ -5,7 +5,7 @@ import {
   rupiah, rupiahSingkat, pesanError, bulanIni, geserBulan, namaBulan, awalBulan, akhirBulan,
   ambilTransaksi, TANPA_KATEGORI,
 } from './lib.js'
-import { PilihBulan, IkonKat, Kosong } from './ui.jsx'
+import { PilihBulan, IkonKat, Kosong, Pas, PasBersama } from './ui.jsx'
 import Rekap from './Rekap.jsx'
 
 const WARNA_MASUK = '#10b981'
@@ -106,7 +106,7 @@ export default function Statistik({ kategori, versi }) {
                 </ResponsiveContainer>
                 <div className="donut-tengah">
                   <small>Total pengeluaran</small>
-                  <b>{rupiah(totalKeluar)}</b>
+                  <Pas as="b">{rupiah(totalKeluar)}</Pas>
                 </div>
               </div>
               <ul className="legenda">
@@ -155,10 +155,10 @@ export default function Statistik({ kategori, versi }) {
               </ResponsiveContainer>
             </div>
           )}
-          <div className="mini-statistik">
-            <div><small>Total pemasukan 6 bulan</small><b className="in">{rupiah(total6Masuk)}</b></div>
-            <div><small>Total pengeluaran 6 bulan</small><b className="out">{rupiah(total6Keluar)}</b></div>
-          </div>
+          <PasBersama className="mini-statistik">
+            <div><small>Total pemasukan 6 bulan</small><b className="pas pas-anak in">{rupiah(total6Masuk)}</b></div>
+            <div><small>Total pengeluaran 6 bulan</small><b className="pas pas-anak out">{rupiah(total6Keluar)}</b></div>
+          </PasBersama>
         </section>
       </div>
 

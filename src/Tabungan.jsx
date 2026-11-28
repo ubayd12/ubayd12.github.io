@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowUpRight, PiggyBank, Trash2 } from 'lucide-react'
 import { supabase } from './supabase.js'
 import { rupiah, today, tanggal, formatInput, parseInput, pesanError } from './lib.js'
-import { Toggle, InputUang, Skeleton, Kosong, Modal, toast } from './ui.jsx'
+import { Toggle, InputUang, Skeleton, Kosong, Modal, Pas, useAngkaNaik, toast } from './ui.jsx'
 
 const JENIS_TABUNGAN = [
   { value: 'setor', label: 'Setor', tone: 'in' },
@@ -50,6 +50,7 @@ export default function Tabungan() {
   useEffect(() => { load() }, [])
 
   const total = items.reduce((s, i) => s + (i.type === 'setor' ? 1 : -1) * Number(i.amount), 0)
+  const totalTampil = useAngkaNaik(loading ? 0 : total)
   const pct = target > 0 ? Math.min(100, Math.max(0, Math.round(total / target * 100))) : 0
 
   async function add(e) {
@@ -89,7 +90,7 @@ export default function Tabungan() {
         <div className="hero-baris">
           <div className="hero-kiri">
             <span className="hero-label"><PiggyBank size={16} /> Total tabungan</span>
-            {loading ? <span className="sk sk-saldo" /> : <div className="hero-saldo">{rupiah(total)}</div>}
+            {loading ? <span className="sk sk-saldo" /> : <Pas as="div" className="hero-saldo">{rupiah(totalTampil)}</Pas>}
             {!loading && (
               <small className="hero-ket">
                 {target > 0
